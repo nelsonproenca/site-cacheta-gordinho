@@ -7,6 +7,7 @@ const TAB_SEGMENTS = [
   { segment: "pontuacao", label: "Pontuação" },
   { segment: "jogadores", label: "Jogadores" },
   { segment: "lives", label: "Lives" },
+  { segment: "partidas", label: "Partidas" },
   { segment: "ranking", label: "Ranking" },
   { segment: "caxetao", label: "Caxetão" },
 ];

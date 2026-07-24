@@ -435,6 +435,8 @@ export type Database = {
           id: string
           live_session_id: string | null
           played_at: string
+          player_a_id: string | null
+          player_b_id: string | null
           score_period_id: string | null
           tiktok_account_id: string
         }
@@ -443,6 +445,8 @@ export type Database = {
           id?: string
           live_session_id?: string | null
           played_at?: string
+          player_a_id?: string | null
+          player_b_id?: string | null
           score_period_id?: string | null
           tiktok_account_id: string
         }
@@ -451,6 +455,8 @@ export type Database = {
           id?: string
           live_session_id?: string | null
           played_at?: string
+          player_a_id?: string | null
+          player_b_id?: string | null
           score_period_id?: string | null
           tiktok_account_id?: string
         }
@@ -467,6 +473,20 @@ export type Database = {
             columns: ["live_session_id"]
             isOneToOne: false
             referencedRelation: "live_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_player_a_id_fkey"
+            columns: ["player_a_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_player_b_id_fkey"
+            columns: ["player_b_id"]
+            isOneToOne: false
+            referencedRelation: "players"
             referencedColumns: ["id"]
           },
           {

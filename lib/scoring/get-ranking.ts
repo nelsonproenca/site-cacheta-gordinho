@@ -50,14 +50,24 @@ function aggregateRanking(rows: ResultRow[]): RankingEntry[] {
 // Lifetime ranking across every result ever recorded for the account,
 // regardless of score_period. Used where there's no period context (e.g. an
 // account with no score_periods created yet).
+//
+// Excludes Caxetão-sourced matches on purpose (.not("matches.live_session_id",
+// "is", null)) — Caxetão is a separate competition, isolated from the
+// weekly/season ranking (see matches_set_score_period, which only ever fills
+// score_period_id for live matches). getPeriodRanking below gets this for
+// free through that same column; this fallback has to filter for it
+// explicitly since it has no score_period to key off of.
 export async function getRanking(
   supabase: SupabaseClient<Database>,
   tiktokAccountId: string,
 ): Promise<RankingEntry[]> {
   const { data, error } = await supabase
     .from("match_results")
-    .select("points_awarded, player_id, players(display_name, tiktok_handle), matches!inner(tiktok_account_id)")
-    .eq("matches.tiktok_account_id", tiktokAccountId);
+    .select(
+      "points_awarded, player_id, players(display_name, tiktok_handle), matches!inner(tiktok_account_id, live_session_id)",
+    )
+    .eq("matches.tiktok_account_id", tiktokAccountId)
+    .not("matches.live_session_id", "is", null);
 
   if (error) throw error;
 

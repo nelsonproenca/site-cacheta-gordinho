@@ -17,7 +17,7 @@ export default async function ContasPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="font-display text-3xl italic font-extrabold uppercase">Minhas contas</h1>
+        <h1 className="font-display text-3xl italic font-extrabold uppercase">Contas</h1>
         <p className="text-ink-dim">Contas TikTok que você administra ou modera.</p>
       </div>
 

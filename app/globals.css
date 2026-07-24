@@ -123,7 +123,7 @@ a{ color:inherit; }
   font-family: var(--font-display); font-weight:700; font-style:italic; text-transform:uppercase;
   letter-spacing:0.6px; font-size:15px;
   border:none; cursor:pointer; padding:13px 26px; border-radius: var(--radius);
-  display:inline-flex; align-items:center; gap:8px;
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
   transition:transform .12s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
   position:relative;
 }
@@ -278,7 +278,22 @@ button.badge:hover{ filter:brightness(1.25); }
 .field{ display:flex; flex-direction:column; gap:8px; }
 .field label{ font-family:var(--font-mono); font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--ink-dim); }
 .field .hint{ font-size:12px; color:var(--titanium); }
-.field .error-text{ font-size:12px; color:var(--red-text); font-weight:600; }
+
+/* Not scoped to .field on purpose (unlike .hint above) — every form in the
+   app renders its action's error/success state as a standalone <p> sibling
+   of the Field components, not nested inside one, so a `.field .error-text`
+   ancestor-scoped rule silently never matched and every error message
+   rendered as plain unstyled text. */
+.error-text{ font-size:12px; color:var(--red-text); font-weight:600; }
+
+/* Heavier treatment than .error-text for errors from destructive/critical
+   actions (e.g. account deletion) that must not be missable — a raw
+   database error surfacing here needs more than 12px red text to register. */
+.alert-error{
+  font-size:13px; font-weight:600; color:var(--red-text);
+  background:rgba(210,0,28,0.12); border:1px solid var(--red-text);
+  border-radius:var(--radius); padding:10px 14px;
+}
 
 .field-info{
   position:relative; display:inline-flex; align-items:center; justify-content:center;

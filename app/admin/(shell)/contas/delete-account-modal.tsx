@@ -45,7 +45,7 @@ export function DeleteAccountModal({ accountId, handle }: { accountId: string; h
               onChange={(e) => setTyped(e.target.value)}
             />
           </Field>
-          {state && "error" in state && <p className="error-text">{state.error}</p>}
+          {state && "error" in state && <p className="alert-error">{state.error}</p>}
           {state && "success" in state && <p className="text-sm text-green">{state.success}</p>}
           <Button type="submit" variant="outline" disabled={pending || typed.trim().toLowerCase().replace(/^@+/, "") !== handle}>
             Excluir conta permanentemente

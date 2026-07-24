@@ -92,6 +92,7 @@ async function main() {
   const victoryLambreta = rules!.find((r) => r.points === 3)!;
   const victoryNormal = rules!.find((r) => r.points === 2)!;
   const defeatNormal = rules!.find((r) => r.points === -1)!;
+  const defeatLambreta = rules!.find((r) => r.points === -3)!;
 
   console.log("\n2. players (service-role insert, mirrors createPlayer action)");
   const { data: playerA } = await service
@@ -125,6 +126,7 @@ async function main() {
     { player: playerB!.id, rule: defeatNormal },
     { player: playerA!.id, rule: victoryNormal },
   ];
+  const recorded: { matchId: string; matchResultId: string; player: string }[] = [];
   for (const r of resultsToRecord) {
     const { data: match, error: matchErr } = await ownerClient
       .from("matches")
@@ -132,14 +134,19 @@ async function main() {
       .select("id")
       .single();
     assert(!matchErr && match, `match created (${matchErr?.message ?? "ok"})`);
-    const { error: resultErr } = await ownerClient.from("match_results").insert({
-      match_id: match!.id,
-      player_id: r.player,
-      scoring_rule_id: r.rule.id,
-      points_awarded: r.rule.points,
-      recorded_by: owner.user!.id,
-    });
+    const { data: result, error: resultErr } = await ownerClient
+      .from("match_results")
+      .insert({
+        match_id: match!.id,
+        player_id: r.player,
+        scoring_rule_id: r.rule.id,
+        points_awarded: r.rule.points,
+        recorded_by: owner.user!.id,
+      })
+      .select("id")
+      .single();
     assert(!resultErr, `match_result recorded (${resultErr?.message ?? "ok"})`);
+    recorded.push({ matchId: match!.id, matchResultId: result!.id, player: r.player });
   }
 
   console.log("\n5. ranking aggregation (lib/scoring/get-ranking.ts)");
@@ -178,6 +185,121 @@ async function main() {
     .from("players")
     .insert({ display_name: "hack", tiktok_handle: `hack_${suffix}` });
   assert(!!anonPlayerWriteErr, `anon blocked from writing players directly (${anonPlayerWriteErr?.message})`);
+
+  // 8. mirrors lib/actions/lives.ts's updateMatchResult: log the previous
+  // value to match_result_edits, then overwrite the match_result.
+  console.log("\n8. update match result (updateMatchResult) + match_result_edits audit log");
+  const editTarget = recorded[1]; // playerB, derrota normal (-1)
+  const { data: beforeUpdate } = await ownerClient
+    .from("match_results")
+    .select("scoring_rule_id, points_awarded")
+    .eq("id", editTarget.matchResultId)
+    .single();
+  assert(
+    beforeUpdate?.scoring_rule_id === defeatNormal.id && beforeUpdate?.points_awarded === -1,
+    `playerB result starts at derrota normal (-1) — got ${beforeUpdate?.points_awarded}`,
+  );
+
+  const { data: updateLogInsert, error: updateLogErr } = await ownerClient
+    .from("match_result_edits")
+    .insert({
+      match_result_id: editTarget.matchResultId,
+      action: "update",
+      previous_scoring_rule_id: beforeUpdate!.scoring_rule_id,
+      previous_points_awarded: beforeUpdate!.points_awarded,
+      new_scoring_rule_id: defeatLambreta.id,
+      new_points_awarded: defeatLambreta.points,
+      edited_by: owner.user.id,
+      tiktok_account_id: accountId,
+    })
+    .select("id")
+    .single();
+  assert(!updateLogErr, `update logged to match_result_edits (${updateLogErr?.message ?? "ok"})`);
+
+  const { error: updateErr } = await ownerClient
+    .from("match_results")
+    .update({ scoring_rule_id: defeatLambreta.id, points_awarded: defeatLambreta.points })
+    .eq("id", editTarget.matchResultId);
+  assert(!updateErr, `match_result updated (${updateErr?.message ?? "ok"})`);
+
+  const rankingAfterUpdate = await getRanking(ownerClient, accountId);
+  const bAfterUpdate = rankingAfterUpdate.find((r) => r.playerId === playerB!.id);
+  assert(
+    bAfterUpdate?.totalPoints === -3,
+    `Jogador B total = -3 after edit to derrota lambreta — got ${bAfterUpdate?.totalPoints}`,
+  );
+
+  const { data: updateLogRow } = await ownerClient
+    .from("match_result_edits")
+    .select("previous_points_awarded, new_points_awarded")
+    .eq("id", updateLogInsert!.id)
+    .single();
+  assert(
+    updateLogRow?.previous_points_awarded === -1 && updateLogRow?.new_points_awarded === -3,
+    `match_result_edits row records -1 -> -3 (got ${updateLogRow?.previous_points_awarded} -> ${updateLogRow?.new_points_awarded})`,
+  );
+
+  // 9. mirrors lib/actions/lives.ts's removeParticipant: log the delete,
+  // then drop the match_result, its owning match, and the live_participants row.
+  console.log("\n9. remove participant (removeParticipant) + match_result_edits audit log");
+  const { data: deleteLogInsert, error: deleteLogErr } = await ownerClient
+    .from("match_result_edits")
+    .insert({
+      match_result_id: editTarget.matchResultId,
+      action: "delete",
+      previous_scoring_rule_id: defeatLambreta.id,
+      previous_points_awarded: defeatLambreta.points,
+      edited_by: owner.user.id,
+      tiktok_account_id: accountId,
+    })
+    .select("id")
+    .single();
+  assert(!deleteLogErr, `delete logged to match_result_edits (${deleteLogErr?.message ?? "ok"})`);
+
+  const { error: resultDeleteErr } = await ownerClient.from("match_results").delete().eq("id", editTarget.matchResultId);
+  assert(!resultDeleteErr, `match_result deleted (${resultDeleteErr?.message ?? "ok"})`);
+
+  const { error: matchDeleteErr } = await ownerClient.from("matches").delete().eq("id", editTarget.matchId);
+  assert(!matchDeleteErr, `owning match deleted (${matchDeleteErr?.message ?? "ok"})`);
+
+  const { error: participantDeleteErr } = await ownerClient
+    .from("live_participants")
+    .delete()
+    .eq("live_session_id", session!.id)
+    .eq("player_id", playerB!.id);
+  assert(!participantDeleteErr, `live_participants row deleted (${participantDeleteErr?.message ?? "ok"})`);
+
+  const rankingAfterDelete = await getRanking(ownerClient, accountId);
+  assert(
+    !rankingAfterDelete.some((r) => r.playerId === playerB!.id),
+    "playerB no longer appears in ranking after removal",
+  );
+  assert(
+    rankingAfterDelete.find((r) => r.playerId === playerA!.id)?.totalPoints === 5,
+    "playerA total unaffected by playerB's removal",
+  );
+
+  const { data: participantLeftover } = await ownerClient
+    .from("live_participants")
+    .select("player_id")
+    .eq("live_session_id", session!.id)
+    .eq("player_id", playerB!.id)
+    .maybeSingle();
+  assert(!participantLeftover, "playerB's live_participants row is gone");
+
+  const { data: editLog } = await ownerClient
+    .from("match_result_edits")
+    .select("id, action, match_result_id")
+    .in("id", [updateLogInsert!.id, deleteLogInsert!.id]);
+  const actions = (editLog ?? []).map((e) => e.action).sort();
+  assert(
+    actions.length === 2 && actions[0] === "delete" && actions[1] === "update",
+    `match_result_edits kept both audit rows after the match_result was deleted — got [${actions.join(", ")}]`,
+  );
+  assert(
+    (editLog ?? []).every((e) => e.match_result_id === null),
+    "match_result_edits.match_result_id set null (on delete set null) once the match_result it describes is gone",
+  );
 }
 
 async function cleanup() {

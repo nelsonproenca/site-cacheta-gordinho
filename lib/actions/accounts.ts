@@ -69,3 +69,28 @@ export async function addModerator(
   revalidatePath("/admin/contas");
   return { success: "Moderador adicionado." };
 }
+
+export async function deleteTiktokAccount(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const tiktokAccountId = String(formData.get("tiktok_account_id") ?? "");
+  const handleConfirmation = normalizeHandle(String(formData.get("handle_confirmation") ?? ""));
+
+  if (!tiktokAccountId || !handleConfirmation) {
+    return { error: "Digite o @tiktok da conta para confirmar." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("delete_tiktok_account", {
+    p_account_id: tiktokAccountId,
+    p_handle_confirmation: handleConfirmation,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/admin/contas");
+  return { success: "Conta excluída." };
+}

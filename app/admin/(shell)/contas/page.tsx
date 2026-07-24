@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardGrid } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AddModeratorForm } from "./add-moderator-form";
+import { DeleteAccountModal } from "./delete-account-modal";
 
 export default async function ContasPage() {
   const supabase = await createClient();
@@ -34,9 +35,12 @@ export default async function ContasPage() {
                   </Badge>
                 </div>
                 <p className="text-ink-dim text-sm mb-4">{account.display_name}</p>
-                <Link className="btn btn-outline btn-sm" href={`/admin/${account.id}/pontuacao`}>
-                  Gerenciar
-                </Link>
+                <div className="flex gap-2">
+                  <Link className="btn btn-outline btn-sm" href={`/admin/${account.id}/pontuacao`}>
+                    Gerenciar
+                  </Link>
+                  {a.role === "owner" && <DeleteAccountModal accountId={account.id} handle={account.handle} />}
+                </div>
                 {a.role === "owner" && <AddModeratorForm tiktokAccountId={account.id} />}
               </Card>
             );

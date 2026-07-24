@@ -80,6 +80,7 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          is_super_admin: boolean
           name: string
           status: string
         }
@@ -87,6 +88,7 @@ export type Database = {
           created_at?: string
           email: string
           id: string
+          is_super_admin?: boolean
           name: string
           status?: string
         }
@@ -94,6 +96,7 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          is_super_admin?: boolean
           name?: string
           status?: string
         }
@@ -638,6 +641,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      delete_tiktok_account: {
+        Args: { p_account_id: string; p_handle_confirmation: string }
+        Returns: undefined
+      }
       has_account_access: {
         Args: { p_tiktok_account_id: string }
         Returns: boolean
@@ -647,6 +654,7 @@ export type Database = {
         Returns: boolean
       }
       is_approved_admin: { Args: never; Returns: boolean }
+      is_super_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

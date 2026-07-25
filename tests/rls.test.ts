@@ -101,13 +101,16 @@ beforeAll(async () => {
     .insert({ admin_id: moderatorA.id, tiktok_account_id: accountA.id, role: "moderator" });
   if (addModErr) throw new Error(`owner A failed to add moderator: ${addModErr.message}`);
 
+  // scoring_rules is global now (20260725000028), not seeded per account —
+  // just grab any existing rule (the canonical 4 always exist) to use as a
+  // valid scoring_rule_id below; the name "ruleB" is legacy, kept to avoid
+  // touching every call site that still reads it.
   const { data: rulesB, error: rulesBErr } = await ownerB.client
     .from("scoring_rules")
     .select("id")
-    .eq("tiktok_account_id", accountB.id)
     .limit(1)
     .single();
-  if (rulesBErr || !rulesB) throw new Error(`fetch seeded rule B failed: ${rulesBErr?.message}`);
+  if (rulesBErr || !rulesB) throw new Error(`fetch a scoring_rule failed: ${rulesBErr?.message}`);
   ruleB = rulesB;
 
   const { data: perB, error: perBErr } = await ownerB.client
@@ -201,22 +204,20 @@ describe("tiktok_accounts", () => {
   });
 });
 
+// scoring_rules is global (20260725000028) — no more per-tenant isolation to
+// test here, only that a regular admin (owner or moderator, super admin or
+// not doesn't matter for has_account_access anymore) can't write it at all.
+// Known gap: the "a super admin CAN write" positive control isn't covered
+// here (would need a dedicated super-admin fixture, out of scope for this
+// pass) — verified instead with a throwaway script when this policy was
+// introduced, same pattern as every other feature in this codebase.
 describe("scoring_rules", () => {
-  it("owner A can write to their own account (positive control)", async () => {
-    const { error } = await ownerA.client
-      .from("scoring_rules")
-      .insert({ tiktok_account_id: accountA.id, name: "Own write ok", points: 1 });
-    expect(error).toBeNull();
-  });
-
-  it("owner A cannot insert a scoring_rule into account B", async () => {
-    const { error } = await ownerA.client
-      .from("scoring_rules")
-      .insert({ tiktok_account_id: accountB.id, name: "Cross-tenant hack", points: 999 });
+  it("a regular owner cannot insert a scoring_rule (super admin only now)", async () => {
+    const { error } = await ownerA.client.from("scoring_rules").insert({ name: "Owner hack", points: 1 });
     expect(error).not.toBeNull();
   });
 
-  it("owner A cannot update account B's scoring_rule", async () => {
+  it("a regular owner cannot update a scoring_rule", async () => {
     // RLS silently filters non-matching rows on UPDATE instead of erroring —
     // must verify via the service client that nothing actually changed.
     await ownerA.client.from("scoring_rules").update({ points: -999 }).eq("id", ruleB.id);
@@ -224,17 +225,21 @@ describe("scoring_rules", () => {
     expect(check?.points).not.toBe(-999);
   });
 
-  it("owner A cannot delete account B's scoring_rule", async () => {
+  it("a regular owner cannot delete a scoring_rule", async () => {
     await ownerA.client.from("scoring_rules").delete().eq("id", ruleB.id);
     const { data: check } = await service.from("scoring_rules").select("id").eq("id", ruleB.id).maybeSingle();
     expect(check).not.toBeNull();
   });
 
   it("anon cannot write scoring_rules", async () => {
-    const { error } = await anon
-      .from("scoring_rules")
-      .insert({ tiktok_account_id: accountA.id, name: "anon hack", points: 1 });
+    const { error } = await anon.from("scoring_rules").insert({ name: "anon hack", points: 1 });
     expect(error).not.toBeNull();
+  });
+
+  it("anon can read scoring_rules (public select)", async () => {
+    const { data, error } = await anon.from("scoring_rules").select("id").limit(1);
+    expect(error).toBeNull();
+    expect(data?.length).toBeGreaterThan(0);
   });
 });
 
@@ -334,11 +339,9 @@ describe("admin_account_access", () => {
     expect(error).not.toBeNull();
   });
 
-  it("moderator A still has has_account_access() — can write scoring_rules for account A", async () => {
-    const { error } = await moderatorA.client
-      .from("scoring_rules")
-      .insert({ tiktok_account_id: accountA.id, name: "Moderator write ok", points: 1 });
-    expect(error).toBeNull();
+  it("moderator A cannot write scoring_rules either (super admin only, not has_account_access)", async () => {
+    const { error } = await moderatorA.client.from("scoring_rules").insert({ name: "Moderator hack", points: 1 });
+    expect(error).not.toBeNull();
   });
 });
 

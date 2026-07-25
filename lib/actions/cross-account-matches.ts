@@ -99,9 +99,8 @@ export async function setCrossAccountMatchWinner(formData: FormData) {
 
 // The points "execution" screen — see 20260724000027. Requires a winner to
 // already be set (points belong to a specific player, not an undetermined
-// confronto), and the chosen scoring_rule must belong to the winning
-// player's own account (my scoring_rules if I won, the opponent's if they
-// did), same defense-in-depth level as every other cross-admin write here.
+// confronto). scoring_rules is global (20260725000028) — no longer scoped
+// per account, so any active rule can apply to whichever side won.
 export async function setCrossAccountMatchPoints(
   _prevState: ActionState,
   formData: FormData,
@@ -117,21 +116,18 @@ export async function setCrossAccountMatchPoints(
 
   const { data: match } = await supabase
     .from("cross_account_matches")
-    .select("winner, account_id, opponent_account_id")
+    .select("winner")
     .eq("id", matchId)
     .maybeSingle();
   if (!match) return { error: "Confronto não encontrado." };
   if (!match.winner) return { error: "Defina o vencedor antes de lançar a pontuação." };
 
-  const winningAccountId = match.winner === "player" ? match.account_id : match.opponent_account_id;
-
   const { data: rule } = await supabase
     .from("scoring_rules")
     .select("points")
     .eq("id", scoringRuleId)
-    .eq("tiktok_account_id", winningAccountId)
     .maybeSingle();
-  if (!rule) return { error: "Regra de pontuação não encontrada para o vencedor." };
+  if (!rule) return { error: "Regra de pontuação não encontrada." };
 
   const { error } = await supabase
     .from("cross_account_matches")

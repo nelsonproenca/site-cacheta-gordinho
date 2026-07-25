@@ -49,20 +49,11 @@ export default async function DesafioPage({
   const myWins = confrontos.filter((c) => c.winner === "player").length;
   const opponentWins = confrontos.filter((c) => c.winner === "opponent").length;
 
-  const [{ data: myRules }, { data: opponentRules }] = await Promise.all([
-    supabase
-      .from("scoring_rules")
-      .select("id, name, points")
-      .eq("tiktok_account_id", accountId)
-      .eq("is_active", true)
-      .order("points", { ascending: false }),
-    supabase
-      .from("scoring_rules")
-      .select("id, name, points")
-      .eq("tiktok_account_id", opponentSession.tiktok_account_id)
-      .eq("is_active", true)
-      .order("points", { ascending: false }),
-  ]);
+  const { data: scoringRules } = await supabase
+    .from("scoring_rules")
+    .select("id, name, points")
+    .eq("is_active", true)
+    .order("points", { ascending: false });
 
   return (
     <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
@@ -89,8 +80,7 @@ export default async function DesafioPage({
         sessionId={sessionId}
         opponentLiveSessionId={opponentLiveSessionId}
         confrontos={confrontos}
-        myScoringRules={myRules ?? []}
-        opponentScoringRules={opponentRules ?? []}
+        scoringRules={scoringRules ?? []}
       />
     </div>
   );

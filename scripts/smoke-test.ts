@@ -75,7 +75,7 @@ async function main() {
   const outsiderClient = await signIn(outsiderEmail);
   const anonClient = createClient<Database>(url, anonKey);
 
-  console.log("\n1. create_tiktok_account RPC + default scoring_rules seed");
+  console.log("\n1. create_tiktok_account RPC");
   const { data: account, error: accountErr } = await ownerClient.rpc("create_tiktok_account", {
     p_handle: handle,
     p_display_name: "Smoke Test Account",
@@ -83,12 +83,13 @@ async function main() {
   assert(!accountErr && account, `account created (${accountErr?.message ?? "ok"})`);
   const accountId = account!.id;
 
+  // scoring_rules is global now (20260725000028) — create_tiktok_account no
+  // longer seeds anything, just read whatever global rules already exist.
   const { data: rules } = await ownerClient
     .from("scoring_rules")
     .select("id, name, points")
-    .eq("tiktok_account_id", accountId)
     .order("points", { ascending: false });
-  assert(rules?.length === 4, `4 default scoring rules seeded (got ${rules?.length})`);
+  assert((rules?.length ?? 0) >= 4, `at least 4 global scoring rules exist (got ${rules?.length})`);
   const victoryLambreta = rules!.find((r) => r.points === 3)!;
   const victoryNormal = rules!.find((r) => r.points === 2)!;
   const defeatNormal = rules!.find((r) => r.points === -1)!;
@@ -158,10 +159,13 @@ async function main() {
   assert(ranking[0]?.playerId === playerA!.id, "Jogador A ranked #1");
 
   console.log("\n6. RLS isolation — outsider admin (no admin_account_access row)");
+  // scoring_rules is global and super-admin-only to write now — a regular
+  // outsider is blocked the same way any non-super-admin would be, not
+  // because of tenant isolation.
   const { error: outsiderWriteErr } = await outsiderClient
     .from("scoring_rules")
-    .insert({ tiktok_account_id: accountId, name: "hack", points: 999 });
-  assert(!!outsiderWriteErr, `outsider blocked from writing scoring_rules (${outsiderWriteErr?.message})`);
+    .insert({ name: "hack", points: 999 });
+  assert(!!outsiderWriteErr, `outsider (non-super-admin) blocked from writing scoring_rules (${outsiderWriteErr?.message})`);
 
   const { data: outsiderAccess } = await outsiderClient
     .from("admin_account_access")
@@ -170,15 +174,10 @@ async function main() {
   assert(outsiderAccess?.length === 0, "outsider cannot see admin_account_access rows for this account");
 
   console.log("\n7. RLS isolation — anonymous (unauthenticated)");
-  const { data: anonRead } = await anonClient
-    .from("scoring_rules")
-    .select("id")
-    .eq("tiktok_account_id", accountId);
-  assert(anonRead?.length === 4, "anon can read scoring_rules (public select)");
+  const { data: anonRead } = await anonClient.from("scoring_rules").select("id");
+  assert((anonRead?.length ?? 0) >= 4, "anon can read the global scoring_rules (public select)");
 
-  const { error: anonWriteErr } = await anonClient
-    .from("scoring_rules")
-    .insert({ tiktok_account_id: accountId, name: "hack", points: 999 });
+  const { error: anonWriteErr } = await anonClient.from("scoring_rules").insert({ name: "hack", points: 999 });
   assert(!!anonWriteErr, `anon blocked from writing scoring_rules (${anonWriteErr?.message})`);
 
   const { error: anonPlayerWriteErr } = await anonClient

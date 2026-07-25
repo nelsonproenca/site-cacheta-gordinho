@@ -35,15 +35,13 @@ export function DesafioSection({
   sessionId,
   opponentLiveSessionId,
   confrontos,
-  myScoringRules,
-  opponentScoringRules,
+  scoringRules,
 }: {
   accountId: string;
   sessionId: string;
   opponentLiveSessionId: string;
   confrontos: Confronto[];
-  myScoringRules: ScoringRule[];
-  opponentScoringRules: ScoringRule[];
+  scoringRules: ScoringRule[];
 }) {
   return (
     <div>
@@ -85,7 +83,7 @@ export function DesafioSection({
                       sessionId={sessionId}
                       opponentLiveSessionId={opponentLiveSessionId}
                       match={c}
-                      rules={c.winner === "player" ? myScoringRules : c.winner === "opponent" ? opponentScoringRules : []}
+                      rules={scoringRules}
                     />
                   </TableCell>
                 </TableRow>

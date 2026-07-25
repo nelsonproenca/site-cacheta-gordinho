@@ -33,7 +33,6 @@ export default async function PartidasCaxetaoPage({
     supabase
       .from("scoring_rules")
       .select("id, name, points")
-      .eq("tiktok_account_id", accountId)
       .eq("is_active", true)
       .order("points", { ascending: false }),
     supabase

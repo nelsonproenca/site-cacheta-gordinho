@@ -14,7 +14,15 @@ import { Button } from "@/components/ui/button";
 
 type Rule = { id: string; name: string; points: number; is_active: boolean };
 
-export function RuleCard({ rule, accountId }: { rule: Rule; accountId: string }) {
+export function RuleCard({
+  rule,
+  accountId,
+  isSuperAdmin,
+}: {
+  rule: Rule;
+  accountId: string;
+  isSuperAdmin: boolean;
+}) {
   const [isEditing, setIsEditing] = useState(false);
   const [updateState, updateAction, updatePending] = useActionState<ActionState, FormData>(
     updateScoringRule,
@@ -33,7 +41,7 @@ export function RuleCard({ rule, accountId }: { rule: Rule; accountId: string })
     }
   }
 
-  if (isEditing) {
+  if (isEditing && isSuperAdmin) {
     return (
       <Card>
         <form action={updateAction} className="flex flex-wrap items-end gap-4">
@@ -75,37 +83,39 @@ export function RuleCard({ rule, accountId }: { rule: Rule; accountId: string })
           {rule.is_active ? "Ativa" : "Inativa"}
         </Badge>
       </div>
-      <div className="flex items-center gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-          Editar
-        </Button>
-        <form action={toggleScoringRule}>
-          <input type="hidden" name="id" value={rule.id} />
-          <input type="hidden" name="tiktok_account_id" value={accountId} />
-          <input type="hidden" name="is_active" value={String(rule.is_active)} />
-          <Button type="submit" variant="outline" size="sm">
-            {rule.is_active ? "Desativar" : "Ativar"}
+      {isSuperAdmin && (
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+            Editar
           </Button>
-        </form>
-        <form action={deleteAction}>
-          <input type="hidden" name="id" value={rule.id} />
-          <input type="hidden" name="tiktok_account_id" value={accountId} />
-          <Button
-            type="submit"
-            variant="icon"
-            disabled={deletePending}
-            aria-label="Excluir regra"
-            title="Excluir"
-            onClick={(e) => {
-              if (!confirm(`Excluir a regra "${rule.name}"?`)) {
-                e.preventDefault();
-              }
-            }}
-          >
-            ✕
-          </Button>
-        </form>
-      </div>
+          <form action={toggleScoringRule}>
+            <input type="hidden" name="id" value={rule.id} />
+            <input type="hidden" name="tiktok_account_id" value={accountId} />
+            <input type="hidden" name="is_active" value={String(rule.is_active)} />
+            <Button type="submit" variant="outline" size="sm">
+              {rule.is_active ? "Desativar" : "Ativar"}
+            </Button>
+          </form>
+          <form action={deleteAction}>
+            <input type="hidden" name="id" value={rule.id} />
+            <input type="hidden" name="tiktok_account_id" value={accountId} />
+            <Button
+              type="submit"
+              variant="icon"
+              disabled={deletePending}
+              aria-label="Excluir regra"
+              title="Excluir"
+              onClick={(e) => {
+                if (!confirm(`Excluir a regra "${rule.name}"?`)) {
+                  e.preventDefault();
+                }
+              }}
+            >
+              ✕
+            </Button>
+          </form>
+        </div>
+      )}
       {deleteState && "error" in deleteState && (
         <p className="error-text w-full mt-2">{deleteState.error}</p>
       )}

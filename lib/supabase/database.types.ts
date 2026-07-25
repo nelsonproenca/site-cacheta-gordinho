@@ -738,7 +738,6 @@ export type Database = {
           is_active: boolean
           name: string
           points: number
-          tiktok_account_id: string
         }
         Insert: {
           created_at?: string
@@ -746,7 +745,6 @@ export type Database = {
           is_active?: boolean
           name: string
           points: number
-          tiktok_account_id: string
         }
         Update: {
           created_at?: string
@@ -754,17 +752,8 @@ export type Database = {
           is_active?: boolean
           name?: string
           points?: number
-          tiktok_account_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "scoring_rules_tiktok_account_id_fkey"
-            columns: ["tiktok_account_id"]
-            isOneToOne: false
-            referencedRelation: "tiktok_accounts"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       tiktok_accounts: {
         Row: {

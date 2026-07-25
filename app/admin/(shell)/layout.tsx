@@ -34,6 +34,7 @@ export default async function AdminShellLayout({ children }: { children: React.R
           <Link className="nav-item" href="/admin/contas">
             Listar contas
           </Link>
+          <AccountSidenavLinks />
         </div>
         <div className="nav-group">
           <div className="nav-label">Administradores</div>
@@ -42,7 +43,6 @@ export default async function AdminShellLayout({ children }: { children: React.R
             {!!pendingCount && <span className="badge badge-red">{pendingCount}</span>}
           </Link>
         </div>
-        <AccountSidenavLinks />
         <div className="nav-group mt-auto px-3">
           <form action={signOut}>
             <button type="submit" className="nav-item w-full text-left">

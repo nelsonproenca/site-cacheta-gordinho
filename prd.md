@@ -33,10 +33,13 @@ O TikTok Login Kit (OAuth oficial) permite apenas que **o próprio usuário** au
 
 | Persona | Descrição | Acesso |
 |---|---|---|
-| **Owner/Admin** | Dono da operação, gerencia uma ou mais contas TikTok, cria moderadores, configura regras de pontuação, cria Caxetão e campeonatos. | Login completo (Supabase Auth), acesso a todas as contas TikTok que possui. |
-| **Moderador** | Ajuda a lançar resultados de partidas durante a live, gerencia inscrições do Caxetão. Acesso restrito a contas TikTok específicas atribuídas a ele. | Login completo, acesso limitado por conta. |
+| **Super Admin** | Papel único e global (hoje só um e-mail), gerencia todas as contas e todos os admins da plataforma, independente de estar em `admin_account_access`. | Login completo, bypass total das checagens por conta. |
+| **Streamer** | Dono da operação, gerencia uma ou mais contas TikTok, cria moderadores, configura regras de pontuação, cria Caxetão e campeonatos. Equivale ao antigo "Owner". | Login completo (Supabase Auth), acesso a todas as contas TikTok que possui. |
+| **Moderador** | Ajuda a lançar resultados de partidas durante a live, gerencia inscrições do Caxetão. Vinculado a um Streamer específico no cadastro (não a uma conta diretamente) e herda o mesmo acesso que esse Streamer tem no momento da aprovação; pode receber acesso extra a outras contas manualmente depois. | Login completo, acesso limitado por conta via `admin_account_access`. |
 | **Jogador (seguidor)** | Participa das lives, se inscreve no Caxetão, acompanha seu ranking. | Cadastro leve, sem senha (ver 4.1). Site público mostra rankings sem necessidade de login. |
 | **Visitante público** | Qualquer pessoa que acessa o site para ver rankings, resultados do Caxetão e chaves de campeonato. | Sem login. |
+
+> **Nota de terminologia**: "Streamer"/"Moderador"/"Super Admin" (`admins.user_type` + `admins.is_super_admin`) é uma classificação de identidade da pessoa, escolhida no cadastro. Quem efetivamente autoriza leitura/escrita por conta continua sendo `admin_account_access.role` (`owner`/`moderator`, inalterado) — um Streamer aprovado vira `owner` da conta que cria; um Moderador aprovado recebe `moderator` nas mesmas contas do Streamer ao qual está vinculado, como snapshot no momento da aprovação.
 
 ---
 
@@ -123,6 +126,21 @@ O TikTok Login Kit (OAuth oficial) permite apenas que **o próprio usuário** au
   - **Jogadores mais engajados**: score combinando frequência de participação em lives, inscrições no Caxetão (mesmo que não jogue), e participação em campeonatos.
 - Esses dados alimentam, por exemplo, priorização de quem chamar para o Caxetão ou destaque de "fã da semana".
 
+### 4.8 Partidas (confrontos entre jogadores)
+
+- Fora do lançamento de resultado por jogador já descrito em 4.3, admin/moderador pode montar explicitamente um **confronto** entre 2 jogadores nomeados ("Jogador 1 vs Jogador 2"), a partir da tela **Partidas** (acessível pelo menu lateral, escopada por conta).
+- Origem do confronto: uma live **aberta** da própria conta, ou um Caxetão com **inscrições encerradas** — nunca os dois ao mesmo tempo numa mesma partida.
+- **Confronto entre streamers diferentes**: além de parear 2 jogadores da mesma live, é possível selecionar **outro streamer cadastrado na plataforma**, ver as lives abertas dele e montar um confronto com um jogador de lá. Esse tipo de confronto:
+  - **Não conta pontos em nenhum ranking** (nem da minha conta, nem da conta do outro streamer) — é isolado do ranking regular, mesmo espírito de isolamento já aplicado ao Caxetão (4.5), só que mais estrito.
+  - Nesta fase, só monta o pareamento (quem joga contra quem) e permite marcar quem venceu — **ainda não lança pontuação**; uma tela de execução/pontuação para esse tipo de confronto fica para uma fase futura, ainda não especificada.
+  - Ao montar o confronto, o admin pode notificar o outro streamer clicando em "Iniciar partida" (ver 4.9).
+- Um jogador de qualquer um dos dois lados de um confronto pode ser trocado por outro (sem precisar remover e recriar o confronto inteiro); um confronto também pode ser removido por completo (exclusão física, não soft-delete) e recriado do zero.
+
+### 4.9 Notificações entre admins
+
+- Admin/moderador pode notificar outro **streamer** diretamente (ex: ao iniciar um confronto entre streamers, 4.8) — mensagem simples de texto, sem canal externo (nada de WhatsApp/e-mail aqui, isso é só para a fase de suplente chamado, 4.5/Fase 4).
+- O ícone de notificações fica disponível na barra superior do site assim que o usuário está logado (antes disso, mostra o link de acesso ao painel), com indicador de não lidas.
+
 ---
 
 ## 5. Não-objetivos (fora de escopo do MVP)
@@ -165,6 +183,10 @@ admins
   id uuid pk
   name text
   email text unique
+  status text check (status in ('pending','approved'))
+  is_super_admin boolean default false
+  user_type text check (user_type in ('streamer','moderador')) nullable  -- nullable p/ super admin
+  streamer_id uuid fk -> admins.id nullable                              -- só p/ user_type='moderador'
   created_at timestamptz
 
 tiktok_accounts
@@ -217,7 +239,29 @@ matches
   live_session_id uuid fk nullable      -- null se for partida do Caxetão/campeonato
   caxetao_event_id uuid fk nullable
   championship_match_id uuid fk nullable
+  player_a_id uuid fk -> players.id nullable   -- pareamento de "partida" (4.8); null nas partidas de 1 jogador só
+  player_b_id uuid fk -> players.id nullable
   played_at timestamptz
+
+cross_account_matches      -- confronto entre streamers diferentes (4.8); nunca soma ranking
+  id uuid pk
+  account_id uuid fk -> tiktok_accounts.id              -- lado de quem monta o confronto
+  live_session_id uuid fk -> live_sessions.id
+  player_id uuid fk -> players.id
+  opponent_account_id uuid fk -> tiktok_accounts.id     -- lado do outro streamer
+  opponent_live_session_id uuid fk -> live_sessions.id
+  opponent_player_id uuid fk -> players.id
+  winner text check (winner in ('player','opponent')) nullable
+  created_by uuid fk -> admins.id
+  created_at timestamptz
+
+notifications               -- notificação simples admin-para-admin (4.9)
+  id uuid pk
+  recipient_admin_id uuid fk -> admins.id
+  sender_admin_id uuid fk -> admins.id nullable
+  message text
+  is_read boolean default false
+  created_at timestamptz
 
 match_results
   id uuid pk
@@ -310,6 +354,7 @@ engagement_snapshots
 - `match_results.points_awarded` é um snapshot (não recalcula retroativamente se `scoring_rules.points` mudar depois) — preserva histórico correto.
 - Rankings semanais/de temporada podem ser **calculados via query** (`SUM(points_awarded)` agrupado por `player_id` + `score_period`) em vez de tabela materializada no MVP; considerar view materializada ou tabela de cache (`weekly_score_cache`) apenas se performance exigir.
 - RLS (Row Level Security) do Supabase deve restringir escrita em `live_sessions`, `matches`, `match_results`, `caxetao_*`, `championship_*` a admins com acesso à `tiktok_account_id` correspondente (via `admin_account_access`). Leitura pública (`select`) liberada para dados de ranking/resultados/chaveamento.
+- `cross_account_matches` é intencionalmente **separada** de `matches`/`match_results`: como um confronto entre streamers diferentes nunca deve contar em ranking nenhum, e `matches` exige uma única `tiktok_account_id` dona por linha, isolar numa tabela à parte (nunca lida pelas queries de ranking) evita depender de um filtro que precisaria ser lembrado toda vez.
 
 ---
 
@@ -407,3 +452,4 @@ Cores semânticas já definidas no arquivo (`--green` para positivo, `--red-brig
 - Se o Caxetão usa exatamente as mesmas `scoring_rules` das lives normais ou um conjunto próprio.
 - Notificação de suplente chamado (canal: WhatsApp? apenas painel?) — fica para Fase 4.
 - Se haverá necessidade futura de exportar dados (CSV) para uso externo.
+- Como a "tela de execução" de confrontos entre streamers (4.8) vai lançar pontuação — hoje só monta o pareamento e marca vencedor, sem `scoring_rules`/pontos, e a decisão explícita foi manter fora de ranking; falta definir se algum dia isso muda.

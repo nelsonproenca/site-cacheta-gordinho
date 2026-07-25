@@ -229,6 +229,8 @@ export type Database = {
           opponent_live_session_id: string
           opponent_player_id: string
           player_id: string
+          points_awarded: number | null
+          scoring_rule_id: string | null
           winner: string | null
         }
         Insert: {
@@ -241,6 +243,8 @@ export type Database = {
           opponent_live_session_id: string
           opponent_player_id: string
           player_id: string
+          points_awarded?: number | null
+          scoring_rule_id?: string | null
           winner?: string | null
         }
         Update: {
@@ -253,6 +257,8 @@ export type Database = {
           opponent_live_session_id?: string
           opponent_player_id?: string
           player_id?: string
+          points_awarded?: number | null
+          scoring_rule_id?: string | null
           winner?: string | null
         }
         Relationships: [
@@ -303,6 +309,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cross_account_matches_scoring_rule_id_fkey"
+            columns: ["scoring_rule_id"]
+            isOneToOne: false
+            referencedRelation: "scoring_rules"
             referencedColumns: ["id"]
           },
         ]

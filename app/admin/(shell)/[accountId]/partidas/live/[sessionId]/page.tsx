@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/utils";
@@ -85,7 +86,7 @@ export default async function PartidasLivePage({
   const { data: confrontoRows } = await supabase
     .from("cross_account_matches")
     .select(
-      `id, winner, opponent_live_session_id,
+      `id, winner, opponent_live_session_id, created_at,
        player:players!cross_account_matches_player_id_fkey(id, display_name, tiktok_handle),
        opponent_player:players!cross_account_matches_opponent_player_id_fkey(id, display_name, tiktok_handle),
        opponent_account:tiktok_accounts!cross_account_matches_opponent_account_id_fkey(handle)`,
@@ -99,10 +100,38 @@ export default async function PartidasLivePage({
       id: c.id,
       winner: c.winner as "player" | "opponent" | null,
       opponentLiveSessionId: c.opponent_live_session_id,
+      createdAt: c.created_at,
       player: c.player!,
       opponentPlayer: c.opponent_player!,
       opponentAccountHandle: c.opponent_account!.handle,
     }));
+
+  // "Últimas partidas" — a partida is every confronto ever built against one
+  // specific opponent live (grouped by opponentLiveSessionId), not a single
+  // confronto row. No extra query: derived from the same confrontos list
+  // CrossStreamerSection already renders, ordered by each group's most
+  // recent confronto, capped at 10.
+  const partidaGroups = new Map<
+    string,
+    { opponentLiveSessionId: string; opponentAccountHandle: string; count: number; lastCreatedAt: string }
+  >();
+  for (const c of confrontos) {
+    const existing = partidaGroups.get(c.opponentLiveSessionId);
+    if (existing) {
+      existing.count += 1;
+      if (c.createdAt > existing.lastCreatedAt) existing.lastCreatedAt = c.createdAt;
+    } else {
+      partidaGroups.set(c.opponentLiveSessionId, {
+        opponentLiveSessionId: c.opponentLiveSessionId,
+        opponentAccountHandle: c.opponentAccountHandle,
+        count: 1,
+        lastCreatedAt: c.createdAt,
+      });
+    }
+  }
+  const ultimasPartidas = [...partidaGroups.values()]
+    .sort((a, b) => (a.lastCreatedAt < b.lastCreatedAt ? 1 : -1))
+    .slice(0, 10);
 
   return (
     <div className="flex flex-col gap-6">
@@ -123,6 +152,28 @@ export default async function PartidasLivePage({
         otherLiveParticipants={otherLiveParticipants}
         confrontos={confrontos}
       />
+
+      <div>
+        <h2 className="font-display italic font-bold text-xl uppercase mb-4">Últimas partidas</h2>
+        {ultimasPartidas.length === 0 ? (
+          <p className="text-ink-dim text-sm">Nenhuma partida contra outro streamer ainda.</p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {ultimasPartidas.map((p) => (
+              <Link
+                key={p.opponentLiveSessionId}
+                href={`/admin/${accountId}/partidas/live/${sessionId}/desafios/${p.opponentLiveSessionId}`}
+              >
+                <Card className="flex flex-row items-center justify-between">
+                  <span className="font-display italic font-bold">@{p.opponentAccountHandle}</span>
+                  <span className="text-ink-dim text-sm">{formatDateTime(p.lastCreatedAt)}</span>
+                  <span className="mono-data text-sm">{p.count} confronto{p.count === 1 ? "" : "s"}</span>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

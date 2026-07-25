@@ -5,6 +5,20 @@ import { createClient } from "@/lib/supabase/server";
 
 export type ActionState = { error: string } | { success: string } | null;
 
+// Every mutating action below revalidates the live page (where confrontos
+// are built) and, when the caller is on the "desafio" detail page (grouped
+// view of every confronto against one specific opponent live —
+// app/admin/(shell)/[accountId]/partidas/live/[sessionId]/desafios/[opponentLiveSessionId]),
+// that page too. opponentLiveSessionId is optional in the FormData
+// specifically so the original CrossStreamerSection call sites (which don't
+// know or care about that route) keep working unchanged.
+function revalidatePartidasPaths(accountId: string, liveSessionId: string, opponentLiveSessionId?: string) {
+  revalidatePath(`/admin/${accountId}/partidas/live/${liveSessionId}`);
+  if (opponentLiveSessionId) {
+    revalidatePath(`/admin/${accountId}/partidas/live/${liveSessionId}/desafios/${opponentLiveSessionId}`);
+  }
+}
+
 // Confrontos between a player on my live and a player on a different
 // streamer's live — see cross_account_matches (20260724000025). No
 // scoring_rule/points here on purpose: this phase only builds the pairing,
@@ -74,12 +88,59 @@ export async function setCrossAccountMatchWinner(formData: FormData) {
   const liveSessionId = String(formData.get("live_session_id") ?? "");
   const matchId = String(formData.get("match_id") ?? "");
   const winner = String(formData.get("winner") ?? "");
+  const opponentLiveSessionId = String(formData.get("opponent_live_session_id") ?? "") || undefined;
   if (!matchId || (winner !== "player" && winner !== "opponent")) return;
 
   const supabase = await createClient();
   await supabase.from("cross_account_matches").update({ winner }).eq("id", matchId);
 
-  revalidatePath(`/admin/${accountId}/partidas/live/${liveSessionId}`);
+  revalidatePartidasPaths(accountId, liveSessionId, opponentLiveSessionId);
+}
+
+// The points "execution" screen — see 20260724000027. Requires a winner to
+// already be set (points belong to a specific player, not an undetermined
+// confronto), and the chosen scoring_rule must belong to the winning
+// player's own account (my scoring_rules if I won, the opponent's if they
+// did), same defense-in-depth level as every other cross-admin write here.
+export async function setCrossAccountMatchPoints(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const accountId = String(formData.get("account_id") ?? "");
+  const liveSessionId = String(formData.get("live_session_id") ?? "");
+  const opponentLiveSessionId = String(formData.get("opponent_live_session_id") ?? "") || undefined;
+  const matchId = String(formData.get("match_id") ?? "");
+  const scoringRuleId = String(formData.get("scoring_rule_id") ?? "");
+  if (!matchId || !scoringRuleId) return { error: "Selecione a pontuação." };
+
+  const supabase = await createClient();
+
+  const { data: match } = await supabase
+    .from("cross_account_matches")
+    .select("winner, account_id, opponent_account_id")
+    .eq("id", matchId)
+    .maybeSingle();
+  if (!match) return { error: "Confronto não encontrado." };
+  if (!match.winner) return { error: "Defina o vencedor antes de lançar a pontuação." };
+
+  const winningAccountId = match.winner === "player" ? match.account_id : match.opponent_account_id;
+
+  const { data: rule } = await supabase
+    .from("scoring_rules")
+    .select("points")
+    .eq("id", scoringRuleId)
+    .eq("tiktok_account_id", winningAccountId)
+    .maybeSingle();
+  if (!rule) return { error: "Regra de pontuação não encontrada para o vencedor." };
+
+  const { error } = await supabase
+    .from("cross_account_matches")
+    .update({ scoring_rule_id: scoringRuleId, points_awarded: rule.points })
+    .eq("id", matchId);
+  if (error) return { error: error.message };
+
+  revalidatePartidasPaths(accountId, liveSessionId, opponentLiveSessionId);
+  return { success: "Resultado salvo." };
 }
 
 // Swaps one side of an already-created confronto for a different player from

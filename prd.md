@@ -76,12 +76,12 @@ O TikTok Login Kit (OAuth oficial) permite apenas que **o próprio usuário** au
 - Admin/moderador abre uma **sessão de live** (`live_sessions`) vinculada a uma conta TikTok, com data/hora.
 - Durante a sessão, adiciona participantes (busca por @ existente ou cria jogador na hora).
 - Para cada partida (`matches`), registra o resultado de cada participante envolvido, escolhendo um **tipo de resultado** pré-configurado (`scoring_rules`), que carrega os pontos.
-- **Regras de pontuação são configuráveis por conta TikTok**, com valores padrão sugeridos:
+- **Regras de pontuação são globais para toda a plataforma** (não por conta TikTok — mudou depois do MVP inicial), com valores padrão:
   - Vitória lambreta: **+3**
   - Vitória normal: **+2**
   - Derrota normal: **−1**
   - Derrota lambreta: **−3**
-- Admin pode criar novos tipos de resultado além dos padrões (nome livre + valor de pontos, positivo ou negativo), ativar/desativar tipos, sem alterar código.
+- Só o **Super Admin** pode criar novos tipos de resultado, editar valores ou ativar/desativar tipos — qualquer mudança afeta o jogo de todas as contas ao mesmo tempo, por isso não fica aberto a streamer/moderador comum. Todo mundo continua podendo usar (ler) as regras normalmente ao lançar resultado.
 - Pontos se acumulam automaticamente no **ranking semanal** e no **ranking geral/temporada** da conta.
 - Fechar uma sessão de live não bloqueia edição retroativa por admin (correção de lançamento incorreto), mas fica registrado log de alteração (auditoria simples: quem alterou, quando, valor anterior).
 
@@ -211,9 +211,8 @@ players
   verified_via_tiktok boolean default false
   created_at timestamptz
 
-scoring_rules
+scoring_rules              -- global, não por conta (mudou depois do MVP inicial — só Super Admin escreve)
   id uuid pk
-  tiktok_account_id uuid fk
   name text                 -- ex: "Vitória lambreta"
   points integer            -- ex: 3, -1, -3
   is_active boolean default true
@@ -357,6 +356,7 @@ engagement_snapshots
 - Rankings semanais/de temporada podem ser **calculados via query** (`SUM(points_awarded)` agrupado por `player_id` + `score_period`) em vez de tabela materializada no MVP; considerar view materializada ou tabela de cache (`weekly_score_cache`) apenas se performance exigir.
 - RLS (Row Level Security) do Supabase deve restringir escrita em `live_sessions`, `matches`, `match_results`, `caxetao_*`, `championship_*` a admins com acesso à `tiktok_account_id` correspondente (via `admin_account_access`). Leitura pública (`select`) liberada para dados de ranking/resultados/chaveamento.
 - `cross_account_matches` é intencionalmente **separada** de `matches`/`match_results`: como um confronto entre streamers diferentes nunca deve contar em ranking nenhum, e `matches` exige uma única `tiktok_account_id` dona por linha, isolar numa tabela à parte (nunca lida pelas queries de ranking) evita depender de um filtro que precisaria ser lembrado toda vez.
+- `scoring_rules` é a única exceção à regra "escrita liberada pra quem tem `admin_account_access` na conta": por ser global (afeta todas as contas de uma vez), a escrita é restrita a `is_super_admin()`, não a `has_account_access()`.
 
 ---
 

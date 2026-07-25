@@ -132,9 +132,9 @@ O TikTok Login Kit (OAuth oficial) permite apenas que **o próprio usuário** au
 - Origem do confronto: uma live **aberta** da própria conta, ou um Caxetão com **inscrições encerradas** — nunca os dois ao mesmo tempo numa mesma partida.
 - **Confronto entre streamers diferentes**: além de parear 2 jogadores da mesma live, é possível selecionar **outro streamer cadastrado na plataforma**, ver as lives abertas dele e montar um confronto com um jogador de lá. Esse tipo de confronto:
   - **Não conta pontos em nenhum ranking** (nem da minha conta, nem da conta do outro streamer) — é isolado do ranking regular, mesmo espírito de isolamento já aplicado ao Caxetão (4.5), só que mais estrito.
-  - Nesta fase, só monta o pareamento (quem joga contra quem) e permite marcar quem venceu — **ainda não lança pontuação**; uma tela de execução/pontuação para esse tipo de confronto fica para uma fase futura, ainda não especificada.
   - Ao montar o confronto, o admin pode notificar o outro streamer clicando em "Iniciar partida" (ver 4.9).
 - Um jogador de qualquer um dos dois lados de um confronto pode ser trocado por outro (sem precisar remover e recriar o confronto inteiro); um confronto também pode ser removido por completo (exclusão física, não soft-delete) e recriado do zero.
+- **"Desafio dos Influencers" (tela de execução)**: todos os confrontos já montados entre a minha live e a live de um streamer específico formam um **desafio** — acessível por um link "Últimas partidas" (10 mais recentes) na tela de montar confronto. A tela do desafio mostra: data, os dois streamers, e a **contagem de vitórias** (1 por confronto vencido — não é soma de pontos), mais a lista de confrontos com Jogador 1, Jogador 2, Resultado e uma coluna **Pontos**: um select com as `scoring_rules` da conta de quem venceu aquele confronto específico; ao escolher uma pontuação, um modal de confirmação ("Deseja salvar esse resultado?") evita lançamento acidental antes de gravar. Mesmo assim, **nada disso soma em ranking algum** — a contagem de vitórias e a pontuação lançada por confronto são só informativas dentro da tela de Partidas.
 
 ### 4.9 Notificações entre admins
 
@@ -252,6 +252,8 @@ cross_account_matches      -- confronto entre streamers diferentes (4.8); nunca 
   opponent_live_session_id uuid fk -> live_sessions.id
   opponent_player_id uuid fk -> players.id
   winner text check (winner in ('player','opponent')) nullable
+  scoring_rule_id uuid fk -> scoring_rules.id nullable   -- regra da conta de quem venceu; sem cascade (histórico)
+  points_awarded integer nullable                        -- snapshot, mesma razão de match_results.points_awarded
   created_by uuid fk -> admins.id
   created_at timestamptz
 
@@ -452,4 +454,4 @@ Cores semânticas já definidas no arquivo (`--green` para positivo, `--red-brig
 - Se o Caxetão usa exatamente as mesmas `scoring_rules` das lives normais ou um conjunto próprio.
 - Notificação de suplente chamado (canal: WhatsApp? apenas painel?) — fica para Fase 4.
 - Se haverá necessidade futura de exportar dados (CSV) para uso externo.
-- Como a "tela de execução" de confrontos entre streamers (4.8) vai lançar pontuação — hoje só monta o pareamento e marca vencedor, sem `scoring_rules`/pontos, e a decisão explícita foi manter fora de ranking; falta definir se algum dia isso muda.
+- A tela de execução de confrontos entre streamers (4.8) já lança pontuação por confronto (`scoring_rule_id`/`points_awarded`) e conta vitórias — mas isso continua isolado de qualquer ranking por decisão explícita; falta definir se algum dia esses confrontos devem passar a valer pra algum ranking (regular ou um ranking próprio de "desafios").

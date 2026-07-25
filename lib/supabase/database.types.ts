@@ -83,6 +83,8 @@ export type Database = {
           is_super_admin: boolean
           name: string
           status: string
+          streamer_id: string | null
+          user_type: string | null
         }
         Insert: {
           created_at?: string
@@ -91,6 +93,8 @@ export type Database = {
           is_super_admin?: boolean
           name: string
           status?: string
+          streamer_id?: string | null
+          user_type?: string | null
         }
         Update: {
           created_at?: string
@@ -99,8 +103,18 @@ export type Database = {
           is_super_admin?: boolean
           name?: string
           status?: string
+          streamer_id?: string | null
+          user_type?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "admins_streamer_id_fkey"
+            columns: ["streamer_id"]
+            isOneToOne: false
+            referencedRelation: "admins"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       caxetao_events: {
         Row: {
@@ -197,6 +211,95 @@ export type Database = {
           },
           {
             foreignKeyName: "caxetao_registrations_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cross_account_matches: {
+        Row: {
+          account_id: string
+          created_at: string
+          created_by: string
+          id: string
+          live_session_id: string
+          opponent_account_id: string
+          opponent_live_session_id: string
+          opponent_player_id: string
+          player_id: string
+          winner: string | null
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          live_session_id: string
+          opponent_account_id: string
+          opponent_live_session_id: string
+          opponent_player_id: string
+          player_id: string
+          winner?: string | null
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          live_session_id?: string
+          opponent_account_id?: string
+          opponent_live_session_id?: string
+          opponent_player_id?: string
+          player_id?: string
+          winner?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cross_account_matches_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "tiktok_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cross_account_matches_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cross_account_matches_live_session_id_fkey"
+            columns: ["live_session_id"]
+            isOneToOne: false
+            referencedRelation: "live_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cross_account_matches_opponent_account_id_fkey"
+            columns: ["opponent_account_id"]
+            isOneToOne: false
+            referencedRelation: "tiktok_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cross_account_matches_opponent_live_session_id_fkey"
+            columns: ["opponent_live_session_id"]
+            isOneToOne: false
+            referencedRelation: "live_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cross_account_matches_opponent_player_id_fkey"
+            columns: ["opponent_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cross_account_matches_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
@@ -505,6 +608,48 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          recipient_admin_id: string
+          sender_admin_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          recipient_admin_id: string
+          sender_admin_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          recipient_admin_id?: string
+          sender_admin_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_recipient_admin_id_fkey"
+            columns: ["recipient_admin_id"]
+            isOneToOne: false
+            referencedRelation: "admins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_sender_admin_id_fkey"
+            columns: ["sender_admin_id"]
+            isOneToOne: false
+            referencedRelation: "admins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           created_at: string
@@ -640,6 +785,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_pending_admin: {
+        Args: { p_admin_id: string }
+        Returns: undefined
+      }
       create_tiktok_account: {
         Args: {
           p_avatar_url?: string

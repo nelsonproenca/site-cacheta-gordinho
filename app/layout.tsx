@@ -4,6 +4,9 @@ import Link from "next/link";
 import { Barlow_Condensed, Titillium_Web, JetBrains_Mono } from "next/font/google";
 import { AuthErrorWatcher } from "@/components/auth-error-watcher";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NotificationBell } from "@/components/notification-bell";
+import { AccountMenu } from "@/components/account-menu";
+import { createClient } from "@/lib/supabase/server";
 import "./globals.css";
 
 // Runs before hydration (strategy="beforeInteractive") so the theme is
@@ -46,11 +49,24 @@ export const metadata: Metadata = {
   description: "Gestão de lives, ranking, Caxetão e campeonatos de Caxeta.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: notifications } = user
+    ? await supabase
+        .from("notifications")
+        .select("id, message, is_read, created_at")
+        .eq("recipient_admin_id", user.id)
+        .order("created_at", { ascending: false })
+    : { data: null };
+
   return (
     <html
       lang="pt-BR"
@@ -72,9 +88,16 @@ export default function RootLayout({
           </Link>
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <Link href="/admin/login" className="btn btn-ghost btn-sm inline-flex items-center gap-2">
-              <span aria-hidden="true">🔒</span> Área Restrita
-            </Link>
+            {user ? (
+              <>
+                <NotificationBell notifications={notifications ?? []} />
+                <AccountMenu />
+              </>
+            ) : (
+              <Link href="/admin/login" className="btn btn-ghost btn-sm inline-flex items-center gap-2">
+                <span aria-hidden="true">🔒</span> Área Restrita
+              </Link>
+            )}
           </div>
         </div>
         {children}

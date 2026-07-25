@@ -23,13 +23,26 @@ export async function signUp(_prevState: AuthActionState, formData: FormData): P
   const name = String(formData.get("name") ?? "");
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
+  const userType = String(formData.get("user_type") ?? "");
+  const streamerId = String(formData.get("streamer_id") ?? "");
+
+  if (userType !== "streamer" && userType !== "moderador") {
+    return { error: "Selecione se você é streamer ou moderador." };
+  }
+  if (userType === "moderador" && !streamerId) {
+    return { error: "Selecione a qual streamer você está vinculado." };
+  }
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { name },
+      data: {
+        name,
+        user_type: userType,
+        streamer_id: userType === "moderador" ? streamerId : "",
+      },
       emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm`,
     },
   });
@@ -52,4 +65,13 @@ export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/admin/login");
+}
+
+// Same as signOut, but for the global masthead's AccountMenu (app/layout.tsx)
+// — that bar renders on every page, public ones included, so "Sair" there
+// should land on the home page, not force a detour through /admin/login.
+export async function signOutToHome() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/");
 }

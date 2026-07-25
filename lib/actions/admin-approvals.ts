@@ -4,16 +4,19 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 
-// RLS (admins_approve_pending, 20260718000018) enforces both that the caller
-// is an approved admin and that this can only move a row pending -> approved
-// — no application-level role check needed here, same reasoning as every
-// other admin-facing write in this codebase.
+// Goes through approve_pending_admin (20260724000024) instead of a plain RLS
+// update — approving a 'moderador' also has to grant them the same
+// admin_account_access rows their linked streamer has, which the approving
+// admin's own session can't necessarily write (only the streamer owns those
+// accounts), so that step needs the RPC's security definer. The RPC
+// re-checks the caller is an approved admin itself, same authorization the
+// old admins_approve_pending policy used to enforce.
 export async function approvePendingAdmin(formData: FormData) {
   const adminId = String(formData.get("admin_id") ?? "");
   if (!adminId) return;
 
   const supabase = await createClient();
-  await supabase.from("admins").update({ status: "approved" }).eq("id", adminId);
+  await supabase.rpc("approve_pending_admin", { p_admin_id: adminId });
 
   revalidatePath("/admin/solicitacoes");
 }

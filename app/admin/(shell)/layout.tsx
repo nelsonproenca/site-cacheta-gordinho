@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/lib/actions/auth";
+import { AccountSidenavLinks } from "./account-sidenav-links";
 
 export default async function AdminShellLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -41,6 +42,7 @@ export default async function AdminShellLayout({ children }: { children: React.R
             {!!pendingCount && <span className="badge badge-red">{pendingCount}</span>}
           </Link>
         </div>
+        <AccountSidenavLinks />
         <div className="nav-group mt-auto px-3">
           <form action={signOut}>
             <button type="submit" className="nav-item w-full text-left">

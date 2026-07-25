@@ -9,7 +9,7 @@ export default async function SolicitacoesPage() {
   const supabase = await createClient();
   const { data: pending } = await supabase
     .from("admins")
-    .select("id, name, email, created_at")
+    .select("id, name, email, created_at, user_type, streamer:admins!streamer_id(name)")
     .eq("status", "pending")
     .order("created_at", { ascending: true });
 
@@ -33,6 +33,13 @@ export default async function SolicitacoesPage() {
               <span className="font-semibold">{r.name}</span>
               <p className="text-ink-dim text-sm">
                 {r.email} · solicitado em {formatDateTime(r.created_at)}
+              </p>
+              <p className="text-ink-dim text-sm">
+                {r.user_type === "moderador"
+                  ? `Moderador · vinculado a ${r.streamer?.name ?? "—"}`
+                  : r.user_type === "streamer"
+                    ? "Streamer"
+                    : "Tipo não informado"}
               </p>
             </div>
             <div className="flex items-center gap-2">

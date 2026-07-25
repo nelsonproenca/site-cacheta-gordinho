@@ -43,6 +43,15 @@ export default async function AdminShellLayout({ children }: { children: React.R
             {!!pendingCount && <span className="badge badge-red">{pendingCount}</span>}
           </Link>
         </div>
+        <div className="nav-group">
+          <div className="nav-label">Partidas</div>
+          <Link className="nav-item" href="/admin/partidas/criar">
+            Criar uma partida
+          </Link>
+          <Link className="nav-item" href="/admin/partidas/jogar">
+            Jogar uma partida
+          </Link>
+        </div>
         <div className="nav-group mt-auto px-3">
           <form action={signOut}>
             <button type="submit" className="nav-item w-full text-left">

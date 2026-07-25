@@ -7,22 +7,26 @@ import { DesafioSection } from "./desafio-section";
 export default async function DesafioPage({
   params,
 }: {
-  params: Promise<{ accountId: string; sessionId: string; opponentLiveSessionId: string }>;
+  params: Promise<{ sessionId: string; opponentLiveSessionId: string }>;
 }) {
-  const { accountId, sessionId, opponentLiveSessionId } = await params;
+  const { sessionId, opponentLiveSessionId } = await params;
   const supabase = await createClient();
 
-  const [{ data: myAccount }, { data: opponentSession }, { data: confrontoRows }] = await Promise.all([
-    supabase.from("tiktok_accounts").select("handle").eq("id", accountId).maybeSingle(),
+  const [{ data: session }, { data: opponentSession }, { data: confrontoRows }] = await Promise.all([
     supabase
       .from("live_sessions")
-      .select("id, session_date, tiktok_account_id, tiktok_accounts(handle)")
+      .select("id, session_date, tiktok_accounts(handle)")
+      .eq("id", sessionId)
+      .maybeSingle(),
+    supabase
+      .from("live_sessions")
+      .select("id, session_date, tiktok_accounts(handle)")
       .eq("id", opponentLiveSessionId)
       .maybeSingle(),
     supabase
       .from("cross_account_matches")
       .select(
-        `id, winner, scoring_rule_id, points_awarded, account_id, opponent_account_id,
+        `id, winner, scoring_rule_id, points_awarded,
          player:players!cross_account_matches_player_id_fkey(id, display_name, tiktok_handle),
          opponent_player:players!cross_account_matches_opponent_player_id_fkey(id, display_name, tiktok_handle),
          scoring_rules(name)`,
@@ -32,7 +36,7 @@ export default async function DesafioPage({
       .order("created_at", { ascending: true }),
   ]);
 
-  if (!myAccount || !opponentSession || !opponentSession.tiktok_accounts) notFound();
+  if (!session || !opponentSession || !session.tiktok_accounts || !opponentSession.tiktok_accounts) notFound();
 
   const confrontos = (confrontoRows ?? [])
     .filter((c) => c.player && c.opponent_player)
@@ -46,8 +50,8 @@ export default async function DesafioPage({
       opponentPlayer: c.opponent_player!,
     }));
 
-  const myWins = confrontos.filter((c) => c.winner === "player").length;
-  const opponentWins = confrontos.filter((c) => c.winner === "opponent").length;
+  const winsA = confrontos.filter((c) => c.winner === "player").length;
+  const winsB = confrontos.filter((c) => c.winner === "opponent").length;
 
   const { data: scoringRules } = await supabase
     .from("scoring_rules")
@@ -59,24 +63,23 @@ export default async function DesafioPage({
     <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
       <Card className="flex flex-col gap-3 h-fit">
         <h2 className="font-display italic font-bold text-xl uppercase">Desafio dos Influencers</h2>
-        <p className="text-ink-dim text-sm">{formatDateTime(opponentSession.session_date)}</p>
+        <p className="text-ink-dim text-sm">{formatDateTime(session.session_date)}</p>
         <p className="mono-data text-sm">
-          @{myAccount.handle} <span className="text-ink-dim">vs</span> @{opponentSession.tiktok_accounts.handle}
+          @{session.tiktok_accounts.handle} <span className="text-ink-dim">vs</span> @{opponentSession.tiktok_accounts.handle}
         </p>
         <div className="flex flex-col gap-1 mt-2">
           <div className="flex items-center justify-between">
-            <span>@{myAccount.handle}</span>
-            <span className="mono-data text-lg">{myWins}</span>
+            <span>@{session.tiktok_accounts.handle}</span>
+            <span className="mono-data text-lg">{winsA}</span>
           </div>
           <div className="flex items-center justify-between">
             <span>@{opponentSession.tiktok_accounts.handle}</span>
-            <span className="mono-data text-lg">{opponentWins}</span>
+            <span className="mono-data text-lg">{winsB}</span>
           </div>
         </div>
       </Card>
 
       <DesafioSection
-        accountId={accountId}
         sessionId={sessionId}
         opponentLiveSessionId={opponentLiveSessionId}
         confrontos={confrontos}

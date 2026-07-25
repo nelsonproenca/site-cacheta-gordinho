@@ -23,21 +23,16 @@ type Confronto = {
   opponentPlayer: Player;
 };
 
-// Detail view of a "desafio" (every confronto ever created between my live
-// and one specific opponent live, see the parent page) — the "tela de
-// execução" deferred when cross-streamer confrontos first shipped: lets an
-// admin launch the actual scoring_rule/points for each already-decided
-// confronto. Jogador 1/2 are read-only here (swapping a player still only
-// happens on the "montar confronto" screen, cross-streamer-section.tsx);
-// Resultado reuses setCrossAccountMatchWinner exactly as-is.
+// Detail view of a "desafio" (every confronto ever created between two
+// specific lives, see the parent page) — the "tela de execução" for
+// launching scoring_rule/points per confronto. Jogador 1/2 are read-only
+// here (swapping a player only happens on /partidas/criar);
 export function DesafioSection({
-  accountId,
   sessionId,
   opponentLiveSessionId,
   confrontos,
   scoringRules,
 }: {
-  accountId: string;
   sessionId: string;
   opponentLiveSessionId: string;
   confrontos: Confronto[];
@@ -70,16 +65,10 @@ export function DesafioSection({
                     <span className="text-ink-dim">@{c.opponentPlayer.tiktok_handle}</span>
                   </TableCell>
                   <TableCell>
-                    <WinnerToggle
-                      accountId={accountId}
-                      sessionId={sessionId}
-                      opponentLiveSessionId={opponentLiveSessionId}
-                      match={c}
-                    />
+                    <WinnerToggle sessionId={sessionId} opponentLiveSessionId={opponentLiveSessionId} match={c} />
                   </TableCell>
                   <TableCell>
                     <PontosCell
-                      accountId={accountId}
                       sessionId={sessionId}
                       opponentLiveSessionId={opponentLiveSessionId}
                       match={c}
@@ -97,12 +86,10 @@ export function DesafioSection({
 }
 
 function WinnerToggle({
-  accountId,
   sessionId,
   opponentLiveSessionId,
   match,
 }: {
-  accountId: string;
   sessionId: string;
   opponentLiveSessionId: string;
   match: Confronto;
@@ -110,8 +97,7 @@ function WinnerToggle({
   return (
     <div className="flex gap-1">
       <form action={setCrossAccountMatchWinner}>
-        <input type="hidden" name="account_id" value={accountId} />
-        <input type="hidden" name="live_session_id" value={sessionId} />
+        <input type="hidden" name="session_id" value={sessionId} />
         <input type="hidden" name="opponent_live_session_id" value={opponentLiveSessionId} />
         <input type="hidden" name="match_id" value={match.id} />
         <input type="hidden" name="winner" value="player" />
@@ -120,8 +106,7 @@ function WinnerToggle({
         </Button>
       </form>
       <form action={setCrossAccountMatchWinner}>
-        <input type="hidden" name="account_id" value={accountId} />
-        <input type="hidden" name="live_session_id" value={sessionId} />
+        <input type="hidden" name="session_id" value={sessionId} />
         <input type="hidden" name="opponent_live_session_id" value={opponentLiveSessionId} />
         <input type="hidden" name="match_id" value={match.id} />
         <input type="hidden" name="winner" value="opponent" />
@@ -134,13 +119,11 @@ function WinnerToggle({
 }
 
 function PontosCell({
-  accountId,
   sessionId,
   opponentLiveSessionId,
   match,
   rules,
 }: {
-  accountId: string;
   sessionId: string;
   opponentLiveSessionId: string;
   match: Confronto;
@@ -189,8 +172,7 @@ function PontosCell({
         <ModalHeader title="Confirmar resultado" onClose={() => setPendingRuleId(null)} />
         {pendingRule && (
           <form action={formAction} className="flex flex-col gap-4">
-            <input type="hidden" name="account_id" value={accountId} />
-            <input type="hidden" name="live_session_id" value={sessionId} />
+            <input type="hidden" name="session_id" value={sessionId} />
             <input type="hidden" name="opponent_live_session_id" value={opponentLiveSessionId} />
             <input type="hidden" name="match_id" value={match.id} />
             <input type="hidden" name="scoring_rule_id" value={pendingRule.id} />

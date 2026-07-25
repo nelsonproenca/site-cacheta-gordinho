@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -92,6 +93,11 @@ export default async function CaxetaoEventPage({
             <Badge variant={CAXETAO_STATUS_VARIANT[synced.status] ?? "neutral"}>
               {CAXETAO_STATUS_LABEL[synced.status] ?? synced.status}
             </Badge>
+            {synced.status !== "scheduled" && synced.status !== "registrations_open" && (
+              <Link className="btn btn-outline btn-sm" href={`/admin/${accountId}/partidas/caxetao/${eventId}`}>
+                Partidas
+              </Link>
+            )}
             {synced.status === "registrations_closed" && (
               <form action={startCaxetaoEvent}>
                 <input type="hidden" name="event_id" value={eventId} />

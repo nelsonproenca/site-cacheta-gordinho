@@ -5,10 +5,13 @@ import { createClient } from "@/lib/supabase/server";
 
 export type ActionState = { error: string } | { success: string } | null;
 
-// Sent from cross-streamer-section.tsx's "Iniciar partida" button — no link
-// or match reference yet, just a plain heads-up (see notifications,
-// 20260724000026). recipient must actually be an approved streamer, same
-// defense-in-depth reasoning as every other cross-admin write in this app.
+// Was wired to a "Iniciar partida" button on the old account-nested
+// cross-streamer-section.tsx (deleted when Partidas became a global area —
+// see app/admin/(shell)/partidas/**), currently not called from anywhere.
+// The action itself still works — no link or match reference yet, just a
+// plain heads-up (see notifications, 20260724000026), recipient must
+// actually be an approved streamer — just needs a new caller once it's
+// clear where "notify a streamer" belongs in the new Criar/Jogar split.
 export async function notifyStreamer(
   _prevState: ActionState,
   formData: FormData,

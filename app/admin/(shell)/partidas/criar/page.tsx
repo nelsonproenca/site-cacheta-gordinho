@@ -1,44 +1,27 @@
 import { createClient } from "@/lib/supabase/server";
 import { CriarPartidaSection } from "./criar-partida-section";
 
-// Global entry point (not nested under an account) — pick 2 streamers, one
-// of their open lives each, and a player from each, to build a confronto.
-// Neither side is "me": lists every approved streamer, including whoever is
-// logged in, since a moderador with no account of their own might be
-// setting this up between two other streamers.
+// Global entry point (not nested under an account) — pick 2 accounts, each
+// account's own open live, and a player from it, to build a confronto.
+// Picking straight from tiktok_accounts (public data, same as the rest of
+// the site) instead of going through streamer identity first — an account
+// is unambiguous even for a streamer who owns more than one.
 export default async function CriarPartidaPage() {
   const supabase = await createClient();
 
-  const { data: streamers } = await supabase
-    .from("admins")
-    .select("id, name")
-    .eq("user_type", "streamer")
-    .eq("status", "approved")
-    .order("name", { ascending: true });
+  const [{ data: accounts }, { data: liveRows }] = await Promise.all([
+    supabase
+      .from("tiktok_accounts")
+      .select("id, handle, display_name")
+      .eq("is_active", true)
+      .order("display_name", { ascending: true }),
+    supabase
+      .from("live_sessions")
+      .select("id, session_date, tiktok_account_id")
+      .eq("status", "open"),
+  ]);
 
-  const streamerIds = (streamers ?? []).map((s) => s.id);
-
-  const { data: accessRows } = streamerIds.length
-    ? await supabase
-        .from("admin_account_access")
-        .select("admin_id, tiktok_accounts(id, handle, live_sessions(id, session_date, status))")
-        .in("admin_id", streamerIds)
-    : { data: [] };
-
-  const lives = (accessRows ?? []).flatMap((row) => {
-    const account = row.tiktok_accounts;
-    if (!account) return [];
-    return account.live_sessions
-      .filter((ls) => ls.status === "open")
-      .map((ls) => ({
-        id: ls.id,
-        session_date: ls.session_date,
-        tiktok_account_id: account.id,
-        account_handle: account.handle,
-        streamer_id: row.admin_id,
-      }));
-  });
-
+  const lives = liveRows ?? [];
   const liveIds = lives.map((l) => l.id);
   const { data: participantRows } = liveIds.length
     ? await supabase
@@ -56,11 +39,11 @@ export default async function CriarPartidaPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-display text-3xl italic font-extrabold uppercase">Criar uma partida</h1>
-        <p className="text-ink-dim">Escolha um streamer, uma live aberta dele e um jogador, dos dois lados.</p>
+        <h1 className="font-display text-3xl italic font-extrabold uppercase">Nova partida</h1>
+        <p className="text-ink-dim">Escolha uma conta e um jogador da live aberta dela, dos dois lados.</p>
       </div>
 
-      <CriarPartidaSection streamers={streamers ?? []} lives={lives} liveParticipants={liveParticipants} />
+      <CriarPartidaSection accounts={accounts ?? []} lives={lives} liveParticipants={liveParticipants} />
     </div>
   );
 }

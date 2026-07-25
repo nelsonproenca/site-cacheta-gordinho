@@ -46,10 +46,10 @@ export default async function AdminShellLayout({ children }: { children: React.R
         <div className="nav-group">
           <div className="nav-label">Partidas</div>
           <Link className="nav-item" href="/admin/partidas/criar">
-            Criar uma partida
+            Nova Partida
           </Link>
           <Link className="nav-item" href="/admin/partidas/jogar">
-            Jogar uma partida
+            Jogar
           </Link>
         </div>
         <div className="nav-group mt-auto px-3">

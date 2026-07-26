@@ -51,8 +51,14 @@ export function CriarPartidaSection({
   if (state !== prevState) {
     setPrevState(state);
     if (state && "success" in state) {
-      setSideA(emptySide);
-      setSideB(emptySide);
+      // Keep the account/live picked on each side — building several
+      // confrontos in a row between the same two lives is the common case,
+      // and re-navigating both dropdowns every time was the actual bug
+      // being fixed here. Only the player choice clears, so the confrontos
+      // list below (already filtered to this exact pair) just grows with
+      // the new row instead of the whole form collapsing.
+      setSideA((s) => ({ ...s, playerId: null }));
+      setSideB((s) => ({ ...s, playerId: null }));
     }
   }
 

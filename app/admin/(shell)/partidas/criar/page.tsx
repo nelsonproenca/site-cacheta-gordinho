@@ -36,6 +36,29 @@ export default async function CriarPartidaPage() {
     (liveParticipants[row.live_session_id] ??= []).push(row.players);
   }
 
+  // Every confronto (across every live pair) — small dataset, same
+  // preload-everything-filter-client-side approach as the rest of this
+  // app. CriarPartidaSection narrows this down to whichever pair of lives
+  // is currently selected, to render the "just built" list under the form.
+  const { data: confrontoRows } = await supabase
+    .from("cross_account_matches")
+    .select(
+      `id, live_session_id, opponent_live_session_id,
+       player:players!cross_account_matches_player_id_fkey(id, display_name, tiktok_handle),
+       opponent_player:players!cross_account_matches_opponent_player_id_fkey(id, display_name, tiktok_handle)`,
+    )
+    .order("created_at", { ascending: true });
+
+  const confrontos = (confrontoRows ?? [])
+    .filter((c) => c.player && c.opponent_player)
+    .map((c) => ({
+      id: c.id,
+      liveSessionId: c.live_session_id,
+      opponentLiveSessionId: c.opponent_live_session_id,
+      player: c.player!,
+      opponentPlayer: c.opponent_player!,
+    }));
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -43,7 +66,12 @@ export default async function CriarPartidaPage() {
         <p className="text-ink-dim">Escolha uma conta e um jogador da live aberta dela, dos dois lados.</p>
       </div>
 
-      <CriarPartidaSection accounts={accounts ?? []} lives={lives} liveParticipants={liveParticipants} />
+      <CriarPartidaSection
+        accounts={accounts ?? []}
+        lives={lives}
+        liveParticipants={liveParticipants}
+        confrontos={confrontos}
+      />
     </div>
   );
 }

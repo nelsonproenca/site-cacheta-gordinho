@@ -6,9 +6,11 @@ import { createClient } from "@/lib/supabase/server";
 export type ActionState = { error: string } | { success: string } | null;
 
 // Partidas is a global area now (not nested under an account) — every
-// mutation just revalidates the two routes that can show a confronto: the
-// "jogar" index (list of partidas) and this specific partida's detail page.
+// mutation revalidates every route that can show a confronto: "criar" (the
+// just-built list under the form), the "jogar" index, and this specific
+// partida's detail page.
 function revalidatePartidasPaths(sessionId: string, opponentLiveSessionId: string) {
+  revalidatePath("/admin/partidas/criar");
   revalidatePath("/admin/partidas/jogar");
   revalidatePath(`/admin/partidas/jogar/${sessionId}/${opponentLiveSessionId}`);
 }
@@ -94,6 +96,7 @@ export async function createCrossAccountMatch(
     }
   }
 
+  revalidatePath("/admin/partidas/criar");
   revalidatePath("/admin/partidas/jogar");
   return { success: "Confronto adicionado." };
 }

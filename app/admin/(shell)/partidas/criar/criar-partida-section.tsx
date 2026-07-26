@@ -1,14 +1,28 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { createCrossAccountMatch, type ActionState } from "@/lib/actions/cross-account-matches";
+import {
+  createCrossAccountMatch,
+  swapCrossAccountMatchPlayer,
+  removeCrossAccountMatch,
+  type ActionState,
+} from "@/lib/actions/cross-account-matches";
 import { Card } from "@/components/ui/card";
 import { Field, Select } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
+import { Modal, ModalHeader } from "@/components/ui/modal";
+import { TableWrap, Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from "@/components/ui/table";
 
 type Player = { id: string; display_name: string; tiktok_handle: string };
 type Account = { id: string; handle: string; display_name: string };
 type Live = { id: string; session_date: string; tiktok_account_id: string };
+type Confronto = {
+  id: string;
+  liveSessionId: string;
+  opponentLiveSessionId: string;
+  player: Player;
+  opponentPlayer: Player;
+};
 
 type Side = {
   accountId: string;
@@ -22,10 +36,12 @@ export function CriarPartidaSection({
   accounts,
   lives,
   liveParticipants,
+  confrontos,
 }: {
   accounts: Account[];
   lives: Live[];
   liveParticipants: Record<string, Player[]>;
+  confrontos: Confronto[];
 }) {
   const [sideA, setSideA] = useState<Side>(emptySide);
   const [sideB, setSideB] = useState<Side>(emptySide);
@@ -41,6 +57,19 @@ export function CriarPartidaSection({
   }
 
   const ready = !!(sideA.playerId && sideB.playerId);
+
+  // Confrontos already built between whichever pair of lives is currently
+  // selected, dos dois lados — the pairing may have landed in the DB either
+  // way round (see createCrossAccountMatch's account_id try/swap), so match
+  // both orderings and figure out per-row which side is "Jogador 1".
+  const relevantConfrontos =
+    sideA.liveId && sideB.liveId
+      ? confrontos.filter(
+          (c) =>
+            (c.liveSessionId === sideA.liveId && c.opponentLiveSessionId === sideB.liveId) ||
+            (c.liveSessionId === sideB.liveId && c.opponentLiveSessionId === sideA.liveId),
+        )
+      : [];
 
   return (
     <Card>
@@ -62,6 +91,67 @@ export function CriarPartidaSection({
           Adicionar jogadores à partida
         </Button>
       </form>
+
+      {sideA.liveId && sideB.liveId && (
+        <div className="mt-6">
+          <h2 className="font-display italic font-bold text-xl uppercase mb-4">Confrontos</h2>
+          {relevantConfrontos.length === 0 ? (
+            <p className="text-ink-dim text-sm">Nenhum confronto montado ainda entre esses dois.</p>
+          ) : (
+            <TableWrap>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableHeaderCell>Jogador 1</TableHeaderCell>
+                    <TableHeaderCell>Jogador 2</TableHeaderCell>
+                    <TableHeaderCell>Opções</TableHeaderCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {relevantConfrontos.map((c) => {
+                    const aIsPlayer = c.liveSessionId === sideA.liveId;
+                    const jogador1 = aIsPlayer ? c.player : c.opponentPlayer;
+                    const jogador2 = aIsPlayer ? c.opponentPlayer : c.player;
+                    const jogador1Side = aIsPlayer ? "player" : "opponent";
+                    const jogador2Side = aIsPlayer ? "opponent" : "player";
+                    return (
+                      <TableRow key={c.id}>
+                        <TableCell>
+                          <PlayerCell
+                            player={jogador1}
+                            pool={liveParticipants[sideA.liveId] ?? []}
+                            matchId={c.id}
+                            side={jogador1Side}
+                            sessionId={c.liveSessionId}
+                            opponentLiveSessionId={c.opponentLiveSessionId}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <PlayerCell
+                            player={jogador2}
+                            pool={liveParticipants[sideB.liveId] ?? []}
+                            matchId={c.id}
+                            side={jogador2Side}
+                            sessionId={c.liveSessionId}
+                            opponentLiveSessionId={c.opponentLiveSessionId}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <RemoveButton
+                            matchId={c.id}
+                            sessionId={c.liveSessionId}
+                            opponentLiveSessionId={c.opponentLiveSessionId}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableWrap>
+          )}
+        </div>
+      )}
     </Card>
   );
 }
@@ -154,5 +244,102 @@ function SidePicker({
         </div>
       )}
     </div>
+  );
+}
+
+// Jogador 1/2 cell in the confrontos list: name + an icon button that opens
+// a modal listing that side's live participants to swap in — always the
+// same pool the player was originally picked from (sideA's or sideB's live),
+// not whatever "player"/"opponent" the row happens to be stored as in the DB.
+function PlayerCell({
+  player,
+  pool,
+  matchId,
+  side,
+  sessionId,
+  opponentLiveSessionId,
+}: {
+  player: Player;
+  pool: Player[];
+  matchId: string;
+  side: "player" | "opponent";
+  sessionId: string;
+  opponentLiveSessionId: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(swapCrossAccountMatchPlayer, null);
+  const [prevState, setPrevState] = useState(state);
+  if (state !== prevState) {
+    setPrevState(state);
+    if (state && "success" in state) setOpen(false);
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <span>
+        {player.display_name} <span className="text-ink-dim">@{player.tiktok_handle}</span>
+      </span>
+      <Button type="button" variant="icon" aria-label="Trocar jogador" title="Trocar" onClick={() => setOpen(true)}>
+        🔄
+      </Button>
+
+      <Modal open={open} onClose={() => setOpen(false)}>
+        <ModalHeader title="Trocar jogador" onClose={() => setOpen(false)} />
+        {state && "error" in state && <p className="alert-error mb-3">{state.error}</p>}
+        <div className="flex flex-col gap-2">
+          {pool.length === 0 ? (
+            <p className="text-ink-dim text-sm">Nenhum outro participante nessa live.</p>
+          ) : (
+            pool.map((p) => (
+              <form key={p.id} action={formAction}>
+                <input type="hidden" name="session_id" value={sessionId} />
+                <input type="hidden" name="opponent_live_session_id" value={opponentLiveSessionId} />
+                <input type="hidden" name="match_id" value={matchId} />
+                <input type="hidden" name="side" value={side} />
+                <input type="hidden" name="new_player_id" value={p.id} />
+                <Button
+                  type="submit"
+                  variant={p.id === player.id ? "primary" : "outline"}
+                  size="sm"
+                  className="justify-start w-full"
+                  disabled={pending}
+                >
+                  {p.display_name} <span className="text-ink-dim">@{p.tiktok_handle}</span>
+                </Button>
+              </form>
+            ))
+          )}
+        </div>
+      </Modal>
+    </div>
+  );
+}
+
+function RemoveButton({
+  matchId,
+  sessionId,
+  opponentLiveSessionId,
+}: {
+  matchId: string;
+  sessionId: string;
+  opponentLiveSessionId: string;
+}) {
+  return (
+    <form action={removeCrossAccountMatch}>
+      <input type="hidden" name="session_id" value={sessionId} />
+      <input type="hidden" name="opponent_live_session_id" value={opponentLiveSessionId} />
+      <input type="hidden" name="match_id" value={matchId} />
+      <Button
+        type="submit"
+        variant="icon"
+        aria-label="Excluir confronto"
+        title="Excluir"
+        onClick={(e) => {
+          if (!confirm("Remover este confronto?")) e.preventDefault();
+        }}
+      >
+        ✕
+      </Button>
+    </form>
   );
 }

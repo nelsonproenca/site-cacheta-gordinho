@@ -4,13 +4,9 @@ import { TableWrap, Table, TableHead, TableBody, TableRow, TableHeaderCell } fro
 import { PlayerForm } from "@/components/player-form";
 import { PlayerRow } from "./player-row";
 
-export default async function JogadoresPage({
-  params,
-}: {
-  params: Promise<{ accountId: string }>;
-}) {
-  const { accountId } = await params;
-  const returnPath = `/admin/${accountId}/jogadores`;
+const RETURN_PATH = "/admin/jogadores";
+
+export default async function JogadoresPage() {
   const supabase = await createClient();
   const { data: players } = await supabase
     .from("players")
@@ -19,12 +15,14 @@ export default async function JogadoresPage({
 
   return (
     <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="font-display text-3xl italic font-extrabold uppercase">Jogadores</h1>
+        <p className="text-ink-dim">Cadastro é global à plataforma — o mesmo jogador pode participar de qualquer conta gerenciada.</p>
+      </div>
+
       <Card>
         <h2 className="font-display italic font-bold text-xl uppercase mb-4">Novo jogador</h2>
-        <p className="text-ink-dim text-sm mb-4">
-          Cadastro é global à plataforma — o mesmo jogador pode participar de outras contas gerenciadas.
-        </p>
-        <PlayerForm returnPath={returnPath} />
+        <PlayerForm returnPath={RETURN_PATH} />
       </Card>
 
       <TableWrap>
@@ -39,7 +37,7 @@ export default async function JogadoresPage({
           </TableHead>
           <TableBody>
             {(players ?? []).map((p) => (
-              <PlayerRow key={p.id} player={p} returnPath={returnPath} />
+              <PlayerRow key={p.id} player={p} returnPath={RETURN_PATH} />
             ))}
           </TableBody>
         </Table>

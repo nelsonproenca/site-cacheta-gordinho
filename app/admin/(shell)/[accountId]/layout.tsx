@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { TabBar } from "@/components/ui/tab-bar";
 
 const TAB_SEGMENTS = [
-  { segment: "jogadores", label: "Jogadores" },
   { segment: "lives", label: "Lives" },
   { segment: "ranking", label: "Ranking" },
   { segment: "caxetao", label: "Caxetão" },

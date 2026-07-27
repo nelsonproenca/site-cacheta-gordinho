@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Users, Plus, List, Shield, Inbox, Gamepad2, Play, Target, LogOut } from "lucide-react";
+import { Users, Plus, List, Shield, Inbox, Gamepad2, Play, Target, UserRound, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/lib/actions/auth";
 import { NavGroup } from "@/components/ui/nav-group";
@@ -45,7 +45,7 @@ export default async function AdminShellLayout({ children }: { children: React.R
         <NavGroup
           label="Partidas"
           icon={<Gamepad2 size={15} />}
-          matchPrefixes={["/admin/partidas", "/admin/pontuacao"]}
+          matchPrefixes={["/admin/partidas", "/admin/pontuacao", "/admin/jogadores"]}
         >
           <Link className="nav-item" href="/admin/partidas/criar">
             <Plus size={16} aria-hidden="true" /> Criar
@@ -55,6 +55,9 @@ export default async function AdminShellLayout({ children }: { children: React.R
           </Link>
           <Link className="nav-item" href="/admin/pontuacao">
             <Target size={16} aria-hidden="true" /> Pontuação
+          </Link>
+          <Link className="nav-item" href="/admin/jogadores">
+            <UserRound size={16} aria-hidden="true" /> Jogadores
           </Link>
         </NavGroup>
         <div className="nav-group mt-auto px-3">

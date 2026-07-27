@@ -179,7 +179,6 @@ export function CriarPartidaSection({
           side={sideA}
           onChange={setSideA}
           lockedHandle={lockedPartida?.accountAHandle}
-          excludePlayerId={sideB.playerId}
         />
         <SidePicker
           label="Jogador 2"
@@ -189,7 +188,6 @@ export function CriarPartidaSection({
           side={sideB}
           onChange={setSideB}
           lockedHandle={lockedPartida?.accountBHandle}
-          excludePlayerId={sideA.playerId}
         />
       </div>
 
@@ -291,7 +289,6 @@ function SidePicker({
   side,
   onChange,
   lockedHandle,
-  excludePlayerId,
 }: {
   label: string;
   accounts: Account[];
@@ -300,13 +297,14 @@ function SidePicker({
   side: Side;
   onChange: (side: Side) => void;
   lockedHandle?: string;
-  excludePlayerId?: string | null;
 }) {
   const livesForAccount = lives.filter((l) => l.tiktok_account_id === side.accountId);
-  // Excludes whichever player the other side already picked — a player
-  // could in principle appear in both lives' participant pools (e.g. joined
-  // both), so this can't rely on the pools themselves already being disjoint.
-  const pool = (side.liveId ? (liveParticipants[side.liveId] ?? []) : []).filter((p) => p.id !== excludePlayerId);
+  // Not filtered by the other side's pick here (unlike the account picker
+  // above it) — a player can legitimately be a participant of both lives at
+  // once, and hiding them from this list the moment the other side picks
+  // them made the list appear to randomly shrink. playersChosenAndEqual
+  // below still blocks actually submitting player X against themselves.
+  const pool = side.liveId ? (liveParticipants[side.liveId] ?? []) : [];
 
   // Once a partida is saved its two sides are immutable (20260727000030) —
   // this screen enforces that by never rendering an account/live picker for

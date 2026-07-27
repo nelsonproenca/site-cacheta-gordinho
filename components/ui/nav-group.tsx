@@ -19,7 +19,7 @@ export function NavGroup({
   children,
 }: {
   label: string;
-  icon: string;
+  icon: ReactNode;
   matchPrefixes?: string[];
   children: ReactNode;
 }) {
@@ -36,7 +36,9 @@ export function NavGroup({
         aria-expanded={open}
       >
         <span className="flex items-center gap-2">
-          <span aria-hidden="true">{icon}</span>
+          <span aria-hidden="true" className="flex items-center">
+            {icon}
+          </span>
           {label}
         </span>
         <span aria-hidden="true" className={`nav-label-chevron ${open ? "is-open" : ""}`}>

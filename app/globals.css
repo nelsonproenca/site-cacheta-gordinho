@@ -412,7 +412,7 @@ tbody tr:hover{ background:var(--surface-2); }
 .nav-label{ font-family:var(--font-mono); font-size:10px; letter-spacing:2px; color:var(--titanium); text-transform:uppercase; padding:14px 12px 8px; }
 .nav-item{
   display:flex; align-items:center; gap:10px;
-  padding:9px 12px; border-radius: var(--radius); font-size:13px; font-weight:600;
+  padding:9px 12px; border-radius: var(--radius); font-size:14px; font-weight:600;
   color:var(--ink-dim); text-decoration:none; cursor:pointer; border-left:2px solid transparent;
   transition:background .15s ease, color .15s ease, border-color .15s ease;
 }

@@ -14,15 +14,7 @@ import { Button } from "@/components/ui/button";
 
 type Rule = { id: string; name: string; points: number; is_active: boolean };
 
-export function RuleCard({
-  rule,
-  accountId,
-  isSuperAdmin,
-}: {
-  rule: Rule;
-  accountId: string;
-  isSuperAdmin: boolean;
-}) {
+export function RuleCard({ rule, isSuperAdmin }: { rule: Rule; isSuperAdmin: boolean }) {
   const [isEditing, setIsEditing] = useState(false);
   const [updateState, updateAction, updatePending] = useActionState<ActionState, FormData>(
     updateScoringRule,
@@ -46,7 +38,6 @@ export function RuleCard({
       <Card>
         <form action={updateAction} className="flex flex-wrap items-end gap-4">
           <input type="hidden" name="id" value={rule.id} />
-          <input type="hidden" name="tiktok_account_id" value={accountId} />
           <Field label="Nome do resultado" htmlFor={`name-${rule.id}`} className="w-80">
             <Input id={`name-${rule.id}`} name="name" type="text" required defaultValue={rule.name} />
           </Field>
@@ -90,7 +81,6 @@ export function RuleCard({
           </Button>
           <form action={toggleScoringRule}>
             <input type="hidden" name="id" value={rule.id} />
-            <input type="hidden" name="tiktok_account_id" value={accountId} />
             <input type="hidden" name="is_active" value={String(rule.is_active)} />
             <Button type="submit" variant="outline" size="sm">
               {rule.is_active ? "Desativar" : "Ativar"}
@@ -98,7 +88,6 @@ export function RuleCard({
           </form>
           <form action={deleteAction}>
             <input type="hidden" name="id" value={rule.id} />
-            <input type="hidden" name="tiktok_account_id" value={accountId} />
             <Button
               type="submit"
               variant="icon"

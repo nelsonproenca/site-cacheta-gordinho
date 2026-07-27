@@ -14,7 +14,6 @@ type Story = StoryObj<typeof meta>;
 export const Admin: Story = {
   args: {
     items: [
-      { href: "/admin/123/pontuacao", label: "Pontuação" },
       { href: "/admin/123/jogadores", label: "Jogadores" },
       { href: "/admin/123/lives", label: "Lives" },
       { href: "/admin/123/ranking", label: "Ranking" },

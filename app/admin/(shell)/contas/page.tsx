@@ -36,7 +36,7 @@ export default async function ContasPage() {
                 </div>
                 <p className="text-ink-dim text-sm mb-4">{account.display_name}</p>
                 <div className="flex gap-2">
-                  <Link className="btn btn-outline btn-sm" href={`/admin/${account.id}/pontuacao`}>
+                  <Link className="btn btn-outline btn-sm" href={`/admin/${account.id}/lives`}>
                     Gerenciar
                   </Link>
                   {a.role === "owner" && <DeleteAccountModal accountId={account.id} handle={account.handle} />}

@@ -87,7 +87,7 @@ export default async function LiveSessionPage({
         {!scoringRules || scoringRules.length === 0 ? (
           <p className="text-ink-dim text-sm mb-4">
             Nenhuma regra de pontuação ativa.{" "}
-            <Link href={`/admin/${accountId}/pontuacao`} className="text-red">
+            <Link href="/admin/pontuacao" className="text-red">
               Configure em Pontuação
             </Link>
             .

@@ -5,12 +5,11 @@ import { createScoringRule, type ActionState } from "@/lib/actions/scoring-rules
 import { Field, Input } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 
-export function CreateRuleForm({ accountId }: { accountId: string }) {
+export function CreateRuleForm() {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(createScoringRule, null);
 
   return (
     <form action={formAction} className="flex flex-wrap items-end gap-4">
-      <input type="hidden" name="tiktok_account_id" value={accountId} />
       <Field label="Nome do resultado" htmlFor="name" className="w-80">
         <Input id="name" name="name" type="text" required placeholder="Ex: Vitória especial" />
       </Field>

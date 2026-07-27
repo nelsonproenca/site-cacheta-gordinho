@@ -3,7 +3,6 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/lib/actions/auth";
 import { NavGroup } from "@/components/ui/nav-group";
-import { AccountSidenavLinks } from "./account-sidenav-links";
 
 export default async function AdminShellLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -26,14 +25,13 @@ export default async function AdminShellLayout({ children }: { children: React.R
         <div className="px-6 pb-7 mb-5 border-b border-stroke">
           <div className="caption mt-1">Painel admin</div>
         </div>
-        <NavGroup label="Contas" icon="👥" matchPrefixes={["/admin/contas"]} matchSuffixes={["/pontuacao"]}>
+        <NavGroup label="Contas" icon="👥" matchPrefixes={["/admin/contas"]}>
           <Link className="nav-item" href="/admin/contas/nova">
             <span aria-hidden="true">➕</span> Nova conta
           </Link>
           <Link className="nav-item" href="/admin/contas">
             <span aria-hidden="true">📋</span> Listar contas
           </Link>
-          <AccountSidenavLinks />
         </NavGroup>
         <NavGroup label="Administradores" icon="🛡️" matchPrefixes={["/admin/solicitacoes"]}>
           <Link className="nav-item justify-between" href="/admin/solicitacoes">
@@ -51,6 +49,11 @@ export default async function AdminShellLayout({ children }: { children: React.R
             <span aria-hidden="true">▶️</span> Jogar
           </Link>
         </NavGroup>
+        <div className="nav-group">
+          <Link className="nav-item" href="/admin/pontuacao">
+            <span aria-hidden="true">🎯</span> Pontuação
+          </Link>
+        </div>
         <div className="nav-group mt-auto px-3">
           <form action={signOut}>
             <button type="submit" className="nav-label-action">

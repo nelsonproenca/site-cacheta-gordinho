@@ -3,12 +3,7 @@ import { Card } from "@/components/ui/card";
 import { CreateRuleForm } from "./create-rule-form";
 import { RuleCard } from "./rule-card";
 
-export default async function PontuacaoPage({
-  params,
-}: {
-  params: Promise<{ accountId: string }>;
-}) {
-  const { accountId } = await params;
+export default async function PontuacaoPage() {
   const supabase = await createClient();
 
   const [{ data: rules }, { data: { user } }] = await Promise.all([
@@ -23,20 +18,23 @@ export default async function PontuacaoPage({
 
   return (
     <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="font-display text-3xl italic font-extrabold uppercase">Pontuação</h1>
+        <p className="text-ink-dim">Regras de pontuação valem pra toda a plataforma.</p>
+      </div>
+
       {isSuperAdmin ? (
         <Card>
           <h2 className="font-display italic font-bold text-xl uppercase mb-4">Nova regra</h2>
-          <CreateRuleForm accountId={accountId} />
+          <CreateRuleForm />
         </Card>
       ) : (
-        <p className="text-ink-dim text-sm">
-          Regras de pontuação valem pra toda a plataforma — só o Super Admin pode criar ou editar.
-        </p>
+        <p className="text-ink-dim text-sm">Só o Super Admin pode criar ou editar regras de pontuação.</p>
       )}
 
       <div className="flex flex-col gap-3">
         {(rules ?? []).map((rule) => (
-          <RuleCard key={rule.id} rule={rule} accountId={accountId} isSuperAdmin={isSuperAdmin} />
+          <RuleCard key={rule.id} rule={rule} isSuperAdmin={isSuperAdmin} />
         ))}
         {(rules ?? []).length === 0 && <p className="text-ink-dim">Nenhuma regra cadastrada.</p>}
       </div>

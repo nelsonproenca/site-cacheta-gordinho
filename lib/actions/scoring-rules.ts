@@ -5,20 +5,18 @@ import { createClient } from "@/lib/supabase/server";
 
 export type ActionState = { error: string } | { success: string } | null;
 
-// scoring_rules is global (20260725000028) — tiktokAccountId below is only
-// ever used for revalidatePath (the "Pontuação" page still lives under
-// /admin/[accountId]/pontuacao even though its data isn't account-scoped
-// anymore), never to scope a query or write. RLS (scoring_rules_write_super_admin)
-// is what actually restricts these four actions to the super admin.
+// scoring_rules is global (20260725000028) and lives at /admin/pontuacao
+// (also global, not nested under an account — 20260726 menu change). RLS
+// (scoring_rules_write_super_admin) is what actually restricts these four
+// actions to the super admin.
 export async function createScoringRule(
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const tiktokAccountId = String(formData.get("tiktok_account_id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   const points = Number(formData.get("points"));
 
-  if (!tiktokAccountId || !name || Number.isNaN(points)) {
+  if (!name || Number.isNaN(points)) {
     return { error: "Preencha nome e pontos." };
   }
 
@@ -29,19 +27,18 @@ export async function createScoringRule(
     return { error: error.message };
   }
 
-  revalidatePath(`/admin/${tiktokAccountId}/pontuacao`);
+  revalidatePath("/admin/pontuacao");
   return { success: "Regra criada." };
 }
 
 export async function toggleScoringRule(formData: FormData) {
   const id = String(formData.get("id") ?? "");
-  const tiktokAccountId = String(formData.get("tiktok_account_id") ?? "");
   const isActive = formData.get("is_active") === "true";
 
   const supabase = await createClient();
   await supabase.from("scoring_rules").update({ is_active: !isActive }).eq("id", id);
 
-  revalidatePath(`/admin/${tiktokAccountId}/pontuacao`);
+  revalidatePath("/admin/pontuacao");
 }
 
 export async function updateScoringRule(
@@ -49,11 +46,10 @@ export async function updateScoringRule(
   formData: FormData,
 ): Promise<ActionState> {
   const id = String(formData.get("id") ?? "");
-  const tiktokAccountId = String(formData.get("tiktok_account_id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   const points = Number(formData.get("points"));
 
-  if (!id || !tiktokAccountId || !name || Number.isNaN(points)) {
+  if (!id || !name || Number.isNaN(points)) {
     return { error: "Preencha nome e pontos." };
   }
 
@@ -64,7 +60,7 @@ export async function updateScoringRule(
     return { error: error.message };
   }
 
-  revalidatePath(`/admin/${tiktokAccountId}/pontuacao`);
+  revalidatePath("/admin/pontuacao");
   return { success: "Regra atualizada." };
 }
 
@@ -73,7 +69,6 @@ export async function deleteScoringRule(
   formData: FormData,
 ): Promise<ActionState> {
   const id = String(formData.get("id") ?? "");
-  const tiktokAccountId = String(formData.get("tiktok_account_id") ?? "");
 
   const supabase = await createClient();
   const { error } = await supabase.from("scoring_rules").delete().eq("id", id);
@@ -86,6 +81,6 @@ export async function deleteScoringRule(
     return { error: message };
   }
 
-  revalidatePath(`/admin/${tiktokAccountId}/pontuacao`);
+  revalidatePath("/admin/pontuacao");
   return { success: "Regra excluída." };
 }

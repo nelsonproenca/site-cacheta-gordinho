@@ -2,13 +2,19 @@
 
 import { useActionState, useState } from "react";
 import { createCaxetaoEvent, type ActionState } from "@/lib/actions/caxetao";
-import { Field, Input } from "@/components/ui/field";
+import { Field, Input, Select } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { cn, nowInSaoPauloAsDatetimeLocal } from "@/lib/utils";
 
 type CloseRule = "time" | "count";
+type Account = { id: string; handle: string; display_name: string };
 
-export function CreateEventForm({ accountId }: { accountId: string }) {
+// accountId is fixed (hidden input) when reached from within an account's
+// own /admin/[accountId]/caxetao page. The global /admin/caxetao/criar entry
+// point has no account in the URL, so it passes `accounts` instead and this
+// renders a <select> in its place — same form either way, createCaxetaoEvent
+// doesn't care which path supplied tiktok_account_id.
+export function CreateEventForm({ accountId, accounts }: { accountId: string; accounts?: never } | { accountId?: never; accounts: Account[] }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(createCaxetaoEvent, null);
   const [closeRule, setCloseRule] = useState<CloseRule>("time");
   const [formKey, setFormKey] = useState(0);
@@ -24,7 +30,22 @@ export function CreateEventForm({ accountId }: { accountId: string }) {
 
   return (
     <form key={formKey} action={formAction} className="flex flex-col gap-4">
-      <input type="hidden" name="tiktok_account_id" value={accountId} />
+      {accountId ? (
+        <input type="hidden" name="tiktok_account_id" value={accountId} />
+      ) : (
+        <Field label="Conta" htmlFor="tiktok_account_id">
+          <Select id="tiktok_account_id" name="tiktok_account_id" required defaultValue="">
+            <option value="" disabled>
+              Selecione
+            </option>
+            {accounts!.map((a) => (
+              <option key={a.id} value={a.id}>
+                @{a.handle} — {a.display_name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      )}
       <input type="hidden" name="close_rule" value={closeRule} />
       {/* close_rule 'count' has no scheduled opening — registration starts
           the moment the event is created, so registration_opens_at is

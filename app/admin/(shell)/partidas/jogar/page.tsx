@@ -21,9 +21,14 @@ export default async function JogarPartidaPage() {
        account_a:tiktok_accounts!partidas_account_a_id_fkey(id, handle),
        account_b:tiktok_accounts!partidas_account_b_id_fkey(id, handle)`,
     )
+    .not("live_session_id", "is", null)
     .order("created_at", { ascending: false });
 
-  const rows = (partidas ?? []).filter((p) => p.account_a && p.account_b);
+  // Caxetão-sourced partidas (20260728000031) get their own list at
+  // /admin/caxetao/jogar — this one only ever shows the live-sourced kind.
+  const rows = (partidas ?? [])
+    .filter((p) => p.account_a && p.account_b && p.live_session_id && p.opponent_live_session_id)
+    .map((p) => ({ ...p, live_session_id: p.live_session_id!, opponent_live_session_id: p.opponent_live_session_id! }));
 
   // Same lazy auto-close as /admin/[accountId]/lives — a live left open past
   // its day almost certainly means the admin forgot to close it.

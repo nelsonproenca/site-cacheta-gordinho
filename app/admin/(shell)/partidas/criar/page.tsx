@@ -47,14 +47,15 @@ export default async function CriarPartidaPage() {
        player:players!cross_account_matches_player_id_fkey(id, display_name, tiktok_handle),
        opponent_player:players!cross_account_matches_opponent_player_id_fkey(id, display_name, tiktok_handle)`,
     )
+    .not("live_session_id", "is", null)
     .order("created_at", { ascending: true });
 
   const confrontos = (confrontoRows ?? [])
-    .filter((c) => c.player && c.opponent_player)
+    .filter((c) => c.player && c.opponent_player && c.live_session_id && c.opponent_live_session_id)
     .map((c) => ({
       id: c.id,
-      liveSessionId: c.live_session_id,
-      opponentLiveSessionId: c.opponent_live_session_id,
+      liveSessionId: c.live_session_id!,
+      opponentLiveSessionId: c.opponent_live_session_id!,
       player: c.player!,
       opponentPlayer: c.opponent_player!,
     }));

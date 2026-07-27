@@ -32,7 +32,12 @@ export default async function EditarPartidaPage({
     .eq("id", partidaId)
     .maybeSingle();
 
-  if (!partida || !partida.account_a || !partida.account_b) notFound();
+  // A partida can now also be Caxetão-sourced (20260728000031) — those live
+  // under /admin/caxetao/criar/[partidaId] instead, this route only ever
+  // handles the live-sourced kind.
+  if (!partida || !partida.account_a || !partida.account_b || !partida.live_session_id || !partida.opponent_live_session_id) {
+    notFound();
+  }
 
   await Promise.all([
     closeStaleLiveSessions(supabase, partida.account_a.id),
@@ -68,11 +73,11 @@ export default async function EditarPartidaPage({
     .order("created_at", { ascending: true });
 
   const confrontos = (confrontoRows ?? [])
-    .filter((c) => c.player && c.opponent_player)
+    .filter((c) => c.player && c.opponent_player && c.live_session_id && c.opponent_live_session_id)
     .map((c) => ({
       id: c.id,
-      liveSessionId: c.live_session_id,
-      opponentLiveSessionId: c.opponent_live_session_id,
+      liveSessionId: c.live_session_id!,
+      opponentLiveSessionId: c.opponent_live_session_id!,
       player: c.player!,
       opponentPlayer: c.opponent_player!,
       winner: c.winner as "player" | "opponent" | null,

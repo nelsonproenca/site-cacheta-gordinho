@@ -58,9 +58,10 @@ export default async function EditarPartidaPage({
   const { data: confrontoRows } = await supabase
     .from("cross_account_matches")
     .select(
-      `id, live_session_id, opponent_live_session_id,
+      `id, live_session_id, opponent_live_session_id, winner, points_awarded,
        player:players!cross_account_matches_player_id_fkey(id, display_name, tiktok_handle),
-       opponent_player:players!cross_account_matches_opponent_player_id_fkey(id, display_name, tiktok_handle)`,
+       opponent_player:players!cross_account_matches_opponent_player_id_fkey(id, display_name, tiktok_handle),
+       scoring_rules(name)`,
     )
     .eq("partida_id", partidaId)
     .order("created_at", { ascending: true });
@@ -73,6 +74,9 @@ export default async function EditarPartidaPage({
       opponentLiveSessionId: c.opponent_live_session_id,
       player: c.player!,
       opponentPlayer: c.opponent_player!,
+      winner: c.winner as "player" | "opponent" | null,
+      scoringRuleName: c.scoring_rules?.name ?? null,
+      pointsAwarded: c.points_awarded,
     }));
 
   return (

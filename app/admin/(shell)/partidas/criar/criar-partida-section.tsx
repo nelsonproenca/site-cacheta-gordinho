@@ -22,6 +22,12 @@ type Confronto = {
   opponentLiveSessionId: string;
   player: Player;
   opponentPlayer: Player;
+  // Only populated for the read-only view (/admin/partidas/criar/[partidaId]
+  // once a live has ended) — Resultado/Pontos are launched on the separate
+  // "Jogar" desafio screen, never editable from here.
+  winner?: "player" | "opponent" | null;
+  scoringRuleName?: string | null;
+  pointsAwarded?: number | null;
 };
 type LockedPartida = {
   id: string;
@@ -106,9 +112,6 @@ export function CriarPartidaSection({
   if (readOnly && lockedPartida) {
     return (
       <Card>
-        <p className="caption mb-1">
-          <span className="mono-data text-ink">{lockedPartida.name}</span>
-        </p>
         <p className="font-display italic font-bold mb-6">
           @{lockedPartida.accountAHandle} <span className="text-ink-dim">vs</span> @{lockedPartida.accountBHandle}
         </p>
@@ -122,6 +125,8 @@ export function CriarPartidaSection({
                 <TableRow>
                   <TableHeaderCell>Jogador 1</TableHeaderCell>
                   <TableHeaderCell>Jogador 2</TableHeaderCell>
+                  <TableHeaderCell>Vencedor</TableHeaderCell>
+                  <TableHeaderCell>Pontos</TableHeaderCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -129,6 +134,12 @@ export function CriarPartidaSection({
                   const aIsPlayer = c.liveSessionId === lockedPartida.liveSessionId;
                   const jogador1 = aIsPlayer ? c.player : c.opponentPlayer;
                   const jogador2 = aIsPlayer ? c.opponentPlayer : c.player;
+                  const jogador1Wins = c.winner === (aIsPlayer ? "player" : "opponent");
+                  const winnerName = c.winner ? (jogador1Wins ? jogador1.display_name : jogador2.display_name) : "";
+                  const pontos =
+                    c.pointsAwarded != null
+                      ? `${c.scoringRuleName ? `${c.scoringRuleName} ` : ""}(${c.pointsAwarded > 0 ? "+" : ""}${c.pointsAwarded})`
+                      : "";
                   return (
                     <TableRow key={c.id}>
                       <TableCell>
@@ -137,6 +148,8 @@ export function CriarPartidaSection({
                       <TableCell>
                         {jogador2.display_name} <span className="text-ink-dim">@{jogador2.tiktok_handle}</span>
                       </TableCell>
+                      <TableCell>{winnerName}</TableCell>
+                      <TableCell>{pontos}</TableCell>
                     </TableRow>
                   );
                 })}

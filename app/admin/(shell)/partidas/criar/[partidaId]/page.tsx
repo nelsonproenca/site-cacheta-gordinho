@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { closeStaleLiveSessions } from "@/lib/live-sessions";
+import { Card } from "@/components/ui/card";
 import { CriarPartidaSection } from "../criar-partida-section";
 
 // Editing an existing partida — reopened from /admin/partidas/jogar's
@@ -79,6 +80,20 @@ export default async function EditarPartidaPage({
       pointsAwarded: c.points_awarded,
     }));
 
+  // "Vitórias" placar — 1 per confronto won (not the sum of points_awarded),
+  // same accounting as the Desafio dos Influencers win tally. A confronto's
+  // own live_session_id may equal either side of the partida (see
+  // resolvePartida's try/swap orientation in createCrossAccountMatch), so
+  // compare against partida.live_session_id per row rather than assuming it.
+  let winsA = 0;
+  let winsB = 0;
+  for (const c of confrontos) {
+    if (!c.winner) continue;
+    const accountAWon = c.winner === (c.liveSessionId === partida.live_session_id ? "player" : "opponent");
+    if (accountAWon) winsA += 1;
+    else winsB += 1;
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -91,6 +106,20 @@ export default async function EditarPartidaPage({
             : "As lives dessa partida já encerraram — apenas consulta, sem adicionar, trocar ou remover confrontos."}
         </p>
       </div>
+
+      <Card className="flex flex-col gap-3">
+        <h2 className="font-display italic font-bold text-xl uppercase">Placar</h2>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between">
+            <span>@{partida.account_a.handle}</span>
+            <span className="mono-data text-lg">{winsA}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>@{partida.account_b.handle}</span>
+            <span className="mono-data text-lg">{winsB}</span>
+          </div>
+        </div>
+      </Card>
 
       <CriarPartidaSection
         accounts={[]}

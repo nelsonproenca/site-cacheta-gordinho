@@ -75,7 +75,7 @@ export function AddParticipantForm({ sessionId, accountId }: { sessionId: string
     <form key={formKey} action={formAction} className="flex flex-wrap items-end gap-3">
       <input type="hidden" name="session_id" value={sessionId} />
       <input type="hidden" name="account_id" value={accountId} />
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 flex-1 min-w-[160px]">
         <label htmlFor="tiktok_handle" className="caption">
           @tiktok
         </label>
@@ -87,7 +87,7 @@ export function AddParticipantForm({ sessionId, accountId }: { sessionId: string
           required
           autoComplete="off"
           placeholder="usuario"
-          className="w-40"
+          className="w-full"
           value={handle}
           onChange={(e) => {
             setHandle(e.target.value);
@@ -127,7 +127,7 @@ export function AddParticipantForm({ sessionId, accountId }: { sessionId: string
             document.body,
           )}
       </div>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 flex-1 min-w-[160px]">
         <label htmlFor="display_name" className="caption">
           Nome {isNew ? "(novo jogador)" : "(se novo)"}
         </label>
@@ -136,11 +136,11 @@ export function AddParticipantForm({ sessionId, accountId }: { sessionId: string
           name="display_name"
           type="text"
           placeholder={selected ? selected.display_name : "opcional"}
-          className="w-40"
+          className="w-full"
           disabled={!!selected}
         />
       </div>
-      <Button type="submit" variant="outline" disabled={pending}>
+      <Button type="submit" variant="outline" disabled={pending} className="flex-1 min-w-[160px]">
         Adicionar à live
       </Button>
       {state && "error" in state && <p className="error-text w-full">{state.error}</p>}

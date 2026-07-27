@@ -107,19 +107,21 @@ export default async function EditarPartidaPage({
         </p>
       </div>
 
-      <Card className="flex flex-col gap-3">
-        <h2 className="font-display italic font-bold text-xl uppercase">Placar</h2>
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center justify-between">
-            <span>@{partida.account_a.handle}</span>
-            <span className="mono-data text-lg">{winsA}</span>
+      {!bothLivesOpen && (
+        <Card className="flex flex-col gap-3">
+          <h2 className="font-display italic font-bold text-xl uppercase">Placar</h2>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <span>@{partida.account_a.handle}</span>
+              <span className="mono-data text-lg">{winsA}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>@{partida.account_b.handle}</span>
+              <span className="mono-data text-lg">{winsB}</span>
+            </div>
           </div>
-          <div className="flex items-center justify-between">
-            <span>@{partida.account_b.handle}</span>
-            <span className="mono-data text-lg">{winsB}</span>
-          </div>
-        </div>
-      </Card>
+        </Card>
+      )}
 
       <CriarPartidaSection
         accounts={[]}

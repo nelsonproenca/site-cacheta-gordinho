@@ -91,7 +91,8 @@ export function CriarPartidaSection({
   }
 
   const accountsChosenAndEqual = !!sideA.accountId && sideA.accountId === sideB.accountId;
-  const ready = !!(sideA.playerId && sideB.playerId) && !accountsChosenAndEqual;
+  const playersChosenAndEqual = !!sideA.playerId && sideA.playerId === sideB.playerId;
+  const ready = !!(sideA.playerId && sideB.playerId) && !accountsChosenAndEqual && !playersChosenAndEqual;
 
   // Confrontos already built between whichever pair of lives is currently
   // selected, dos dois lados — the pairing may have landed in the DB either
@@ -172,27 +173,35 @@ export function CriarPartidaSection({
       <div className="grid gap-6 sm:grid-cols-2">
         <SidePicker
           label="Jogador 1"
-          accounts={accounts}
+          accounts={accounts.filter((a) => a.id !== sideB.accountId)}
           lives={lives}
           liveParticipants={liveParticipants}
           side={sideA}
           onChange={setSideA}
           lockedHandle={lockedPartida?.accountAHandle}
+          excludePlayerId={sideB.playerId}
         />
         <SidePicker
           label="Jogador 2"
-          accounts={accounts}
+          accounts={accounts.filter((a) => a.id !== sideA.accountId)}
           lives={lives}
           liveParticipants={liveParticipants}
           side={sideB}
           onChange={setSideB}
           lockedHandle={lockedPartida?.accountBHandle}
+          excludePlayerId={sideA.playerId}
         />
       </div>
 
       {accountsChosenAndEqual && (
         <p className="alert-error mt-4">
           As duas contas são a mesma — selecione uma conta diferente para o outro lado.
+        </p>
+      )}
+
+      {playersChosenAndEqual && (
+        <p className="alert-error mt-4">
+          O mesmo jogador foi escolhido dos dois lados — selecione um jogador diferente para o outro lado.
         </p>
       )}
 
@@ -282,6 +291,7 @@ function SidePicker({
   side,
   onChange,
   lockedHandle,
+  excludePlayerId,
 }: {
   label: string;
   accounts: Account[];
@@ -290,9 +300,13 @@ function SidePicker({
   side: Side;
   onChange: (side: Side) => void;
   lockedHandle?: string;
+  excludePlayerId?: string | null;
 }) {
   const livesForAccount = lives.filter((l) => l.tiktok_account_id === side.accountId);
-  const pool = side.liveId ? (liveParticipants[side.liveId] ?? []) : [];
+  // Excludes whichever player the other side already picked — a player
+  // could in principle appear in both lives' participant pools (e.g. joined
+  // both), so this can't rely on the pools themselves already being disjoint.
+  const pool = (side.liveId ? (liveParticipants[side.liveId] ?? []) : []).filter((p) => p.id !== excludePlayerId);
 
   // Once a partida is saved its two sides are immutable (20260727000030) —
   // this screen enforces that by never rendering an account/live picker for

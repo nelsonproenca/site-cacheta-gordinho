@@ -621,48 +621,6 @@ export type Database = {
           },
         ]
       }
-      notifications: {
-        Row: {
-          created_at: string
-          id: string
-          is_read: boolean
-          message: string
-          recipient_admin_id: string
-          sender_admin_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_read?: boolean
-          message: string
-          recipient_admin_id: string
-          sender_admin_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_read?: boolean
-          message?: string
-          recipient_admin_id?: string
-          sender_admin_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notifications_recipient_admin_id_fkey"
-            columns: ["recipient_admin_id"]
-            isOneToOne: false
-            referencedRelation: "admins"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notifications_sender_admin_id_fkey"
-            columns: ["sender_admin_id"]
-            isOneToOne: false
-            referencedRelation: "admins"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       players: {
         Row: {
           created_at: string

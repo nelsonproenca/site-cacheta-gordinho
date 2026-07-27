@@ -69,6 +69,15 @@ export function nowInSaoPauloAsDatetimeLocal(): string {
   return new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 16);
 }
 
+// "@handleA_X_@handleB_yyyymmdd_hhmm" — a partida's name (lib/actions/
+// cross-account-matches.ts), generated once at creation time and
+// snapshotted onto the partidas row. Same fixed America/Sao_Paulo offset as
+// the rest of this file.
+export function buildPartidaName(handleA: string, handleB: string): string {
+  const [datePart, timePart] = nowInSaoPauloAsDatetimeLocal().split("T");
+  return `@${handleA}_X_@${handleB}_${datePart.replace(/-/g, "")}_${timePart.replace(":", "")}`;
+}
+
 // Formats digits as a Brazilian phone number: (11) 91234-5678 (11 digits,
 // mobile with the leading 9) or (11) 1234-5678 (10 digits, landline).
 // Used to mask every WhatsApp field so users can't paste/type runaway digits.

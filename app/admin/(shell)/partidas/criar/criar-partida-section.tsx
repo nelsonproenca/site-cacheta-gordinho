@@ -23,6 +23,16 @@ type Confronto = {
   player: Player;
   opponentPlayer: Player;
 };
+type LockedPartida = {
+  id: string;
+  name: string;
+  accountAId: string;
+  accountAHandle: string;
+  liveSessionId: string;
+  accountBId: string;
+  accountBHandle: string;
+  opponentLiveSessionId: string;
+};
 
 type Side = {
   accountId: string;
@@ -37,14 +47,26 @@ export function CriarPartidaSection({
   lives,
   liveParticipants,
   confrontos,
+  lockedPartida = null,
+  readOnly = false,
 }: {
   accounts: Account[];
   lives: Live[];
   liveParticipants: Record<string, Player[]>;
   confrontos: Confronto[];
+  lockedPartida?: LockedPartida | null;
+  readOnly?: boolean;
 }) {
-  const [sideA, setSideA] = useState<Side>(emptySide);
-  const [sideB, setSideB] = useState<Side>(emptySide);
+  const [sideA, setSideA] = useState<Side>(
+    lockedPartida
+      ? { accountId: lockedPartida.accountAId, liveId: lockedPartida.liveSessionId, playerId: null }
+      : emptySide,
+  );
+  const [sideB, setSideB] = useState<Side>(
+    lockedPartida
+      ? { accountId: lockedPartida.accountBId, liveId: lockedPartida.opponentLiveSessionId, playerId: null }
+      : emptySide,
+  );
 
   const [state, formAction, pending] = useActionState<ActionState, FormData>(createCrossAccountMatch, null);
   const [prevState, setPrevState] = useState(state);
@@ -62,7 +84,8 @@ export function CriarPartidaSection({
     }
   }
 
-  const ready = !!(sideA.playerId && sideB.playerId);
+  const accountsChosenAndEqual = !!sideA.accountId && sideA.accountId === sideB.accountId;
+  const ready = !!(sideA.playerId && sideB.playerId) && !accountsChosenAndEqual;
 
   // Confrontos already built between whichever pair of lives is currently
   // selected, dos dois lados — the pairing may have landed in the DB either
@@ -77,12 +100,88 @@ export function CriarPartidaSection({
         )
       : [];
 
+  // Either live has already ended — no participant pool left to build a new
+  // confronto from, so this renders a plain read-only list instead of the
+  // interactive picker below (no add/swap/remove).
+  if (readOnly && lockedPartida) {
+    return (
+      <Card>
+        <p className="caption mb-1">
+          <span className="mono-data text-ink">{lockedPartida.name}</span>
+        </p>
+        <p className="font-display italic font-bold mb-6">
+          @{lockedPartida.accountAHandle} <span className="text-ink-dim">vs</span> @{lockedPartida.accountBHandle}
+        </p>
+        <h2 className="font-display italic font-bold text-xl uppercase mb-4">Confrontos</h2>
+        {confrontos.length === 0 ? (
+          <p className="text-ink-dim text-sm">Nenhum confronto nessa partida.</p>
+        ) : (
+          <TableWrap>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableHeaderCell>Jogador 1</TableHeaderCell>
+                  <TableHeaderCell>Jogador 2</TableHeaderCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {confrontos.map((c) => {
+                  const aIsPlayer = c.liveSessionId === lockedPartida.liveSessionId;
+                  const jogador1 = aIsPlayer ? c.player : c.opponentPlayer;
+                  const jogador2 = aIsPlayer ? c.opponentPlayer : c.player;
+                  return (
+                    <TableRow key={c.id}>
+                      <TableCell>
+                        {jogador1.display_name} <span className="text-ink-dim">@{jogador1.tiktok_handle}</span>
+                      </TableCell>
+                      <TableCell>
+                        {jogador2.display_name} <span className="text-ink-dim">@{jogador2.tiktok_handle}</span>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableWrap>
+        )}
+      </Card>
+    );
+  }
+
   return (
     <Card>
+      {lockedPartida && (
+        <p className="caption mb-4">
+          Editando: <span className="mono-data text-ink">{lockedPartida.name}</span>
+        </p>
+      )}
+
       <div className="grid gap-6 sm:grid-cols-2">
-        <SidePicker label="Jogador 1" accounts={accounts} lives={lives} liveParticipants={liveParticipants} side={sideA} onChange={setSideA} />
-        <SidePicker label="Jogador 2" accounts={accounts} lives={lives} liveParticipants={liveParticipants} side={sideB} onChange={setSideB} />
+        <SidePicker
+          label="Jogador 1"
+          accounts={accounts}
+          lives={lives}
+          liveParticipants={liveParticipants}
+          side={sideA}
+          onChange={setSideA}
+          lockedHandle={lockedPartida?.accountAHandle}
+        />
+        <SidePicker
+          label="Jogador 2"
+          accounts={accounts}
+          lives={lives}
+          liveParticipants={liveParticipants}
+          side={sideB}
+          onChange={setSideB}
+          lockedHandle={lockedPartida?.accountBHandle}
+        />
       </div>
+
+      {accountsChosenAndEqual && (
+        <p className="alert-error mt-4">
+          As duas contas são a mesma — selecione uma conta diferente para o outro lado.
+        </p>
+      )}
 
       <form action={formAction} className="mt-6">
         <input type="hidden" name="side_a_account_id" value={sideA.accountId} />
@@ -169,6 +268,7 @@ function SidePicker({
   liveParticipants,
   side,
   onChange,
+  lockedHandle,
 }: {
   label: string;
   accounts: Account[];
@@ -176,9 +276,47 @@ function SidePicker({
   liveParticipants: Record<string, Player[]>;
   side: Side;
   onChange: (side: Side) => void;
+  lockedHandle?: string;
 }) {
   const livesForAccount = lives.filter((l) => l.tiktok_account_id === side.accountId);
   const pool = side.liveId ? (liveParticipants[side.liveId] ?? []) : [];
+
+  // Once a partida is saved its two sides are immutable (20260727000030) —
+  // this screen enforces that by never rendering an account/live picker for
+  // an already-resolved side, only the player picker below stays live so
+  // new participants who joined the live since creation can still be added.
+  if (lockedHandle) {
+    return (
+      <div className="flex flex-col gap-4">
+        <p className="caption">{label}</p>
+        <div>
+          <p className="caption mb-1">Conta</p>
+          <p className="font-semibold">@{lockedHandle}</p>
+        </div>
+        <div>
+          <p className="caption mb-2">Participantes</p>
+          {pool.length === 0 ? (
+            <p className="text-ink-dim text-sm">Nenhum participante ainda.</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {pool.map((p) => (
+                <Button
+                  key={p.id}
+                  type="button"
+                  variant={side.playerId === p.id ? "primary" : "outline"}
+                  size="sm"
+                  className="justify-start"
+                  onClick={() => onChange({ ...side, playerId: p.id })}
+                >
+                  {p.display_name} <span className="text-ink-dim">@{p.tiktok_handle}</span>
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">

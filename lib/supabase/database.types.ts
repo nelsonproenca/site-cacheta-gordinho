@@ -228,6 +228,7 @@ export type Database = {
           opponent_account_id: string
           opponent_live_session_id: string
           opponent_player_id: string
+          partida_id: string
           player_id: string
           points_awarded: number | null
           scoring_rule_id: string | null
@@ -242,6 +243,7 @@ export type Database = {
           opponent_account_id: string
           opponent_live_session_id: string
           opponent_player_id: string
+          partida_id: string
           player_id: string
           points_awarded?: number | null
           scoring_rule_id?: string | null
@@ -256,6 +258,7 @@ export type Database = {
           opponent_account_id?: string
           opponent_live_session_id?: string
           opponent_player_id?: string
+          partida_id?: string
           player_id?: string
           points_awarded?: number | null
           scoring_rule_id?: string | null
@@ -302,6 +305,13 @@ export type Database = {
             columns: ["opponent_player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cross_account_matches_partida_id_fkey"
+            columns: ["partida_id"]
+            isOneToOne: false
+            referencedRelation: "partidas"
             referencedColumns: ["id"]
           },
           {
@@ -617,6 +627,75 @@ export type Database = {
             columns: ["tiktok_account_id"]
             isOneToOne: false
             referencedRelation: "tiktok_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partidas: {
+        Row: {
+          account_a_id: string
+          account_b_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          live_session_id: string
+          name: string
+          opponent_live_session_id: string
+        }
+        Insert: {
+          account_a_id: string
+          account_b_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          live_session_id: string
+          name: string
+          opponent_live_session_id: string
+        }
+        Update: {
+          account_a_id?: string
+          account_b_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          live_session_id?: string
+          name?: string
+          opponent_live_session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partidas_account_a_id_fkey"
+            columns: ["account_a_id"]
+            isOneToOne: false
+            referencedRelation: "tiktok_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partidas_account_b_id_fkey"
+            columns: ["account_b_id"]
+            isOneToOne: false
+            referencedRelation: "tiktok_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partidas_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partidas_live_session_id_fkey"
+            columns: ["live_session_id"]
+            isOneToOne: false
+            referencedRelation: "live_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partidas_opponent_live_session_id_fkey"
+            columns: ["opponent_live_session_id"]
+            isOneToOne: false
+            referencedRelation: "live_sessions"
             referencedColumns: ["id"]
           },
         ]

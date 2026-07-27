@@ -70,7 +70,7 @@ export default async function JogarPartidaPage() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <Link href={`/admin/partidas/criar/${p.id}`} className="btn btn-outline btn-sm">
-                    Editar
+                    {bothLivesOpen ? "Editar" : "Ver"}
                   </Link>
                   {bothLivesOpen ? (
                     <Link

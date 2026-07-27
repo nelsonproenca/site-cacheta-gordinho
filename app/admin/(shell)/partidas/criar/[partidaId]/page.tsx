@@ -78,7 +78,9 @@ export default async function EditarPartidaPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-display text-3xl italic font-extrabold uppercase">Editar partida</h1>
+        <h1 className="font-display text-3xl italic font-extrabold uppercase">
+          {bothLivesOpen ? "Editar partida" : "Ver partida"}
+        </h1>
         <p className="text-ink-dim">
           {bothLivesOpen
             ? "Adicione mais confrontos ou troque jogadores — as contas não podem mudar."

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { closeStaleLiveSessions } from "@/lib/live-sessions";
 import { formatDateTime } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 
@@ -17,18 +18,29 @@ export default async function JogarPartidaPage() {
     .from("partidas")
     .select(
       `id, name, created_at, live_session_id, opponent_live_session_id,
-       account_a:tiktok_accounts!partidas_account_a_id_fkey(handle),
-       account_b:tiktok_accounts!partidas_account_b_id_fkey(handle)`,
+       account_a:tiktok_accounts!partidas_account_a_id_fkey(id, handle),
+       account_b:tiktok_accounts!partidas_account_b_id_fkey(id, handle)`,
     )
     .order("created_at", { ascending: false });
+
+  const rows = (partidas ?? []).filter((p) => p.account_a && p.account_b);
+
+  // Same lazy auto-close as /admin/[accountId]/lives — a live left open past
+  // its day almost certainly means the admin forgot to close it.
+  const accountIds = [...new Set(rows.flatMap((p) => [p.account_a!.id, p.account_b!.id]))];
+  await Promise.all(accountIds.map((id) => closeStaleLiveSessions(supabase, id)));
+
+  const liveIds = [...new Set(rows.flatMap((p) => [p.live_session_id, p.opponent_live_session_id]))];
+  const { data: liveRows } = liveIds.length
+    ? await supabase.from("live_sessions").select("id, status").in("id", liveIds)
+    : { data: [] };
+  const liveStatus = new Map((liveRows ?? []).map((l) => [l.id, l.status]));
 
   const { data: matchRows } = await supabase.from("cross_account_matches").select("partida_id");
   const counts = new Map<string, number>();
   for (const row of matchRows ?? []) {
     counts.set(row.partida_id, (counts.get(row.partida_id) ?? 0) + 1);
   }
-
-  const rows = (partidas ?? []).filter((p) => p.account_a && p.account_b);
 
   return (
     <div className="flex flex-col gap-6">
@@ -43,6 +55,8 @@ export default async function JogarPartidaPage() {
         <div className="flex flex-col gap-3">
           {rows.map((p) => {
             const count = counts.get(p.id) ?? 0;
+            const bothLivesOpen =
+              liveStatus.get(p.live_session_id) === "open" && liveStatus.get(p.opponent_live_session_id) === "open";
             return (
               <Card key={p.id} className="flex flex-row items-center justify-between gap-4">
                 <div>
@@ -58,9 +72,16 @@ export default async function JogarPartidaPage() {
                   <Link href={`/admin/partidas/criar/${p.id}`} className="btn btn-outline btn-sm">
                     Editar
                   </Link>
-                  <Link href={`/admin/partidas/jogar/${p.live_session_id}/${p.opponent_live_session_id}`} className="btn btn-sm">
-                    Jogar
-                  </Link>
+                  {bothLivesOpen ? (
+                    <Link
+                      href={`/admin/partidas/jogar/${p.live_session_id}/${p.opponent_live_session_id}`}
+                      className="btn btn-primary btn-sm"
+                    >
+                      Jogar
+                    </Link>
+                  ) : (
+                    <span className="text-ink-dim text-sm">Live encerrada</span>
+                  )}
                 </div>
               </Card>
             );

@@ -412,7 +412,7 @@ tbody tr:hover{ background:var(--surface-2); }
 .nav-label{ font-family:var(--font-mono); font-size:10px; letter-spacing:2px; color:var(--titanium); text-transform:uppercase; padding:14px 12px 8px; }
 .nav-item{
   display:flex; align-items:center; gap:10px;
-  padding:9px 12px; border-radius: var(--radius); font-size:14px; font-weight:600;
+  padding:9px 12px; border-radius: var(--radius); font-size:13px; font-weight:600;
   color:var(--ink-dim); text-decoration:none; cursor:pointer; border-left:2px solid transparent;
   transition:background .15s ease, color .15s ease, border-color .15s ease;
 }
@@ -420,13 +420,23 @@ tbody tr:hover{ background:var(--surface-2); }
 .nav-item.is-active{ background:var(--surface-2); color:var(--ink); border-left-color:var(--red); }
 .nav-label-toggle{
   width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px;
-  background:none; border:none; cursor:pointer; font:inherit;
+  background:none; border:none; cursor:pointer;
 }
 .nav-label-toggle:hover{ color:var(--ink-dim); }
 .nav-label-chevron{ display:inline-block; transition:transform .15s ease; }
 .nav-label-chevron.is-open{ transform:rotate(90deg); }
 .nav-group-items{ display:flex; flex-direction:column; }
 .nav-group-items.is-collapsed{ display:none; }
+/* Sair — same typography as the nav-label group headers (e.g. "Partidas"),
+   not the larger nav-item font, but still hoverable like a menu action. */
+.nav-label-action{
+  width:100%; display:flex; align-items:center; gap:8px; text-align:left;
+  background:none; border:none; cursor:pointer; border-radius: var(--radius);
+  font-family:var(--font-mono); font-size:10px; letter-spacing:2px; text-transform:uppercase;
+  color:var(--titanium); padding:9px 12px;
+  transition:background .15s ease, color .15s ease;
+}
+.nav-label-action:hover{ background:var(--surface-2); color:var(--ink); }
 @media (max-width: 860px){
   .shell{ grid-template-columns:1fr; }
   .sidenav{ position:relative; height:auto; display:flex; overflow-x:auto; padding:14px; border-right:none; border-bottom:1px solid var(--stroke); }

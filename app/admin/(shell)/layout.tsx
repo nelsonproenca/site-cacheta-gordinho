@@ -24,9 +24,6 @@ export default async function AdminShellLayout({ children }: { children: React.R
     <div className="shell">
       <nav className="sidenav">
         <div className="px-6 pb-7 mb-5 border-b border-stroke">
-          <div className="font-display italic font-extrabold uppercase text-lg">
-            Caxetão do <span className="text-red">Gordinho</span>
-          </div>
           <div className="caption mt-1">Painel admin</div>
         </div>
         <NavGroup label="Contas" icon="👥" matchPrefixes={["/admin/contas"]} matchSuffixes={["/pontuacao"]}>
@@ -56,7 +53,7 @@ export default async function AdminShellLayout({ children }: { children: React.R
         </NavGroup>
         <div className="nav-group mt-auto px-3">
           <form action={signOut}>
-            <button type="submit" className="nav-item w-full text-left">
+            <button type="submit" className="nav-label-action">
               <span aria-hidden="true">🚪</span> Sair
             </button>
           </form>

@@ -60,30 +60,27 @@ export default async function DesafioPage({
     .order("points", { ascending: false });
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-      <div className="flex flex-col gap-6 h-fit">
-        <Card className="flex flex-col gap-3">
-          <h2 className="font-display italic font-bold text-xl uppercase">Desafio dos Influencers</h2>
-          <p className="text-ink-dim text-sm">{formatDateTime(session.session_date)}</p>
-          <p className="mono-data text-sm">
-            @{session.tiktok_accounts.handle} <span className="text-ink-dim">vs</span> @{opponentSession.tiktok_accounts.handle}
-          </p>
-        </Card>
-
-        <Card className="flex flex-col gap-3">
-          <h2 className="font-display italic font-bold text-xl uppercase">Placar</h2>
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between">
-              <span>@{session.tiktok_accounts.handle}</span>
-              <span className="mono-data text-lg">{winsA}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>@{opponentSession.tiktok_accounts.handle}</span>
-              <span className="mono-data text-lg">{winsB}</span>
-            </div>
-          </div>
-        </Card>
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="font-display text-3xl italic font-extrabold uppercase">Desafio dos Influencers</h1>
+        <p className="text-ink-dim">{formatDateTime(session.session_date)}</p>
       </div>
+
+      <Card className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="mono-data text-lg font-bold">
+          @{session.tiktok_accounts.handle} <span className="text-ink-dim">vs</span> @{opponentSession.tiktok_accounts.handle}
+        </p>
+        <div className="flex items-center gap-6">
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-ink-dim text-xs">@{session.tiktok_accounts.handle}</span>
+            <span className="mono-data text-2xl">{winsA}</span>
+          </div>
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-ink-dim text-xs">@{opponentSession.tiktok_accounts.handle}</span>
+            <span className="mono-data text-2xl">{winsB}</span>
+          </div>
+        </div>
+      </Card>
 
       <DesafioSection
         sessionId={sessionId}

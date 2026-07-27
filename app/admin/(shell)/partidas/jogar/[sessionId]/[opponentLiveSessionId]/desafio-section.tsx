@@ -6,6 +6,7 @@ import {
   setCrossAccountMatchPoints,
   type ActionState,
 } from "@/lib/actions/cross-account-matches";
+import { Card } from "@/components/ui/card";
 import { Select } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { Modal, ModalHeader } from "@/components/ui/modal";
@@ -39,7 +40,7 @@ export function DesafioSection({
   scoringRules: ScoringRule[];
 }) {
   return (
-    <div>
+    <Card>
       <h2 className="font-display italic font-bold text-xl uppercase mb-4">Confrontos</h2>
       {confrontos.length === 0 ? (
         <p className="text-ink-dim text-sm">Nenhum confronto neste desafio.</p>
@@ -81,7 +82,7 @@ export function DesafioSection({
           </Table>
         </TableWrap>
       )}
-    </div>
+    </Card>
   );
 }
 

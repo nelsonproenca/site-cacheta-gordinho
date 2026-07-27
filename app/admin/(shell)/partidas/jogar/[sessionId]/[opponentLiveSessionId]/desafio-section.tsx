@@ -59,11 +59,16 @@ export function DesafioSection({
               {confrontos.map((c) => (
                 <TableRow key={c.id}>
                   <TableCell>
-                    {c.player.display_name} <span className="text-ink-dim">@{c.player.tiktok_handle}</span>
+                    <div className="flex flex-col">
+                      <span>{c.player.display_name}</span>
+                      <span className="text-ink-dim">@{c.player.tiktok_handle}</span>
+                    </div>
                   </TableCell>
                   <TableCell>
-                    {c.opponentPlayer.display_name}{" "}
-                    <span className="text-ink-dim">@{c.opponentPlayer.tiktok_handle}</span>
+                    <div className="flex flex-col">
+                      <span>{c.opponentPlayer.display_name}</span>
+                      <span className="text-ink-dim">@{c.opponentPlayer.tiktok_handle}</span>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <WinnerToggle sessionId={sessionId} opponentLiveSessionId={opponentLiveSessionId} match={c} />

@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { formatDateTime } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { DesafioSection } from "./desafio-section";
 
@@ -15,12 +14,12 @@ export default async function DesafioPage({
   const [{ data: session }, { data: opponentSession }, { data: confrontoRows }] = await Promise.all([
     supabase
       .from("live_sessions")
-      .select("id, session_date, tiktok_accounts(handle)")
+      .select("id, tiktok_accounts(handle)")
       .eq("id", sessionId)
       .maybeSingle(),
     supabase
       .from("live_sessions")
-      .select("id, session_date, tiktok_accounts(handle)")
+      .select("id, tiktok_accounts(handle)")
       .eq("id", opponentLiveSessionId)
       .maybeSingle(),
     supabase
@@ -62,14 +61,16 @@ export default async function DesafioPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-display text-3xl italic font-extrabold uppercase">Desafio dos Influencers</h1>
-        <p className="text-ink-dim">{formatDateTime(session.session_date)}</p>
+        <h1 className="font-display text-3xl italic font-extrabold uppercase">Partida em Andamento</h1>
       </div>
 
       <Card className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="mono-data text-lg font-bold">
-          @{session.tiktok_accounts.handle} <span className="text-ink-dim">vs</span> @{opponentSession.tiktok_accounts.handle}
-        </p>
+        <div>
+          <h2 className="font-display italic font-bold text-xl uppercase mb-2">Placar</h2>
+          <p className="mono-data text-lg font-bold">
+            @{session.tiktok_accounts.handle} <span className="text-ink-dim">vs</span> @{opponentSession.tiktok_accounts.handle}
+          </p>
+        </div>
         <div className="flex items-center gap-6">
           <div className="flex flex-col items-center gap-1">
             <span className="text-ink-dim text-xs">@{session.tiktok_accounts.handle}</span>

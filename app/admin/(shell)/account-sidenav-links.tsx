@@ -26,7 +26,7 @@ export function AccountSidenavLinks() {
 
   return (
     <Link className="nav-item" href={`/admin/${maybeAccountId}/pontuacao`}>
-      Pontuação
+      <span aria-hidden="true">🎯</span> Pontuação
     </Link>
   );
 }

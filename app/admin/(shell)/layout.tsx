@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/lib/actions/auth";
+import { NavGroup } from "@/components/ui/nav-group";
 import { AccountSidenavLinks } from "./account-sidenav-links";
 
 export default async function AdminShellLayout({ children }: { children: React.ReactNode }) {
@@ -23,39 +24,40 @@ export default async function AdminShellLayout({ children }: { children: React.R
     <div className="shell">
       <nav className="sidenav">
         <div className="px-6 pb-7 mb-5 border-b border-stroke">
-          <div className="font-display italic font-extrabold uppercase text-lg">Caxeta Gordinho</div>
+          <div className="font-display italic font-extrabold uppercase text-lg">
+            Caxetão do <span className="text-red">Gordinho</span>
+          </div>
           <div className="caption mt-1">Painel admin</div>
         </div>
-        <div className="nav-group">
-          <div className="nav-label">Contas</div>
+        <NavGroup label="Contas" icon="👥" matchPrefixes={["/admin/contas"]} matchSuffixes={["/pontuacao"]}>
           <Link className="nav-item" href="/admin/contas/nova">
-            Nova conta
+            <span aria-hidden="true">➕</span> Nova conta
           </Link>
           <Link className="nav-item" href="/admin/contas">
-            Listar contas
+            <span aria-hidden="true">📋</span> Listar contas
           </Link>
           <AccountSidenavLinks />
-        </div>
-        <div className="nav-group">
-          <div className="nav-label">Administradores</div>
+        </NavGroup>
+        <NavGroup label="Administradores" icon="🛡️" matchPrefixes={["/admin/solicitacoes"]}>
           <Link className="nav-item justify-between" href="/admin/solicitacoes">
-            <span>Solicitações pendentes</span>
+            <span className="flex items-center gap-2">
+              <span aria-hidden="true">📥</span> Solicitações pendentes
+            </span>
             {!!pendingCount && <span className="badge badge-red">{pendingCount}</span>}
           </Link>
-        </div>
-        <div className="nav-group">
-          <div className="nav-label">Partidas</div>
+        </NavGroup>
+        <NavGroup label="Partidas" icon="🎮" matchPrefixes={["/admin/partidas"]}>
           <Link className="nav-item" href="/admin/partidas/criar">
-            Nova Partida
+            <span aria-hidden="true">🆕</span> Nova Partida
           </Link>
           <Link className="nav-item" href="/admin/partidas/jogar">
-            Jogar
+            <span aria-hidden="true">▶️</span> Jogar
           </Link>
-        </div>
+        </NavGroup>
         <div className="nav-group mt-auto px-3">
           <form action={signOut}>
             <button type="submit" className="nav-item w-full text-left">
-              Sair
+              <span aria-hidden="true">🚪</span> Sair
             </button>
           </form>
         </div>

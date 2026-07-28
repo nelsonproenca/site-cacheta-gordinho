@@ -1,12 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 
-type CaxetaoEvent = Database["public"]["Tables"]["caxetao_events"]["Row"];
+type CachetaoEvent = Database["public"]["Tables"]["cachetao_events"]["Row"];
 
-// Shared pt-BR labels/badge colors for caxetao_events.status and .close_rule
+// Shared pt-BR labels/badge colors for cachetao_events.status and .close_rule
 // — was copy-pasted across the admin list, admin detail, and public pages;
 // kept here as the one place that knows every status/rule string.
-export const CAXETAO_STATUS_LABEL: Record<string, string> = {
+export const CACHETAO_STATUS_LABEL: Record<string, string> = {
   scheduled: "Agendado",
   registrations_open: "Inscrições abertas",
   registrations_closed: "Inscrições encerradas",
@@ -14,7 +14,7 @@ export const CAXETAO_STATUS_LABEL: Record<string, string> = {
   finished: "Finalizado",
 };
 
-export const CAXETAO_STATUS_VARIANT: Record<string, "neutral" | "green" | "yellow" | "purple"> = {
+export const CACHETAO_STATUS_VARIANT: Record<string, "neutral" | "green" | "yellow" | "purple"> = {
   scheduled: "neutral",
   registrations_open: "green",
   registrations_closed: "yellow",
@@ -22,7 +22,7 @@ export const CAXETAO_STATUS_VARIANT: Record<string, "neutral" | "green" | "yello
   finished: "neutral",
 };
 
-export const CAXETAO_CLOSE_RULE_LABEL: Record<string, string> = {
+export const CACHETAO_CLOSE_RULE_LABEL: Record<string, string> = {
   time: "Por tempo",
   count: "Por quantidade",
   both: "Tempo ou quantidade",
@@ -35,10 +35,10 @@ export const CAXETAO_CLOSE_RULE_LABEL: Record<string, string> = {
 // admin page load). "Por quantidade" closes eagerly instead, right when the
 // capacity-filling registration is inserted (see registerPlayerForEvent) —
 // there's a concrete write to hang that off of, so there's nothing to poll.
-export async function syncCaxetaoEventStatus(
+export async function syncCachetaoEventStatus(
   supabase: SupabaseClient<Database>,
-  event: CaxetaoEvent,
-): Promise<CaxetaoEvent> {
+  event: CachetaoEvent,
+): Promise<CachetaoEvent> {
   const now = new Date();
   let nextStatus = event.status;
 
@@ -57,7 +57,7 @@ export async function syncCaxetaoEventStatus(
   if (nextStatus === event.status) return event;
 
   const { data } = await supabase
-    .from("caxetao_events")
+    .from("cachetao_events")
     .update({ status: nextStatus })
     .eq("id", event.id)
     .eq("status", event.status)
@@ -75,7 +75,7 @@ export type RegistrationOutcome = {
 // Shared by self-registration (public, no player auth) and admin manual add
 // — both need identical capacity/FIFO math, so it lives in one place instead
 // of being duplicated against two different Supabase clients. Caller must
-// pass an already status-synced event (see syncCaxetaoEventStatus).
+// pass an already status-synced event (see syncCachetaoEventStatus).
 //
 // Concurrency note: this reads counts, then inserts, as separate statements
 // — two truly simultaneous registrations landing on the exact last slot
@@ -85,13 +85,13 @@ export type RegistrationOutcome = {
 // ever actually happens.
 export async function registerPlayerForEvent(
   supabase: SupabaseClient<Database>,
-  event: CaxetaoEvent,
+  event: CachetaoEvent,
   playerId: string,
 ): Promise<{ error: string } | { data: RegistrationOutcome }> {
   const now = new Date();
 
   if (event.status === "registrations_closed" || event.status === "in_progress" || event.status === "finished") {
-    return { error: "Inscrições encerradas para este Caxetão." };
+    return { error: "Inscrições encerradas para este Cachetão." };
   }
   if (new Date(event.registration_opens_at) > now) {
     return { error: "Inscrições ainda não abriram." };
@@ -99,9 +99,9 @@ export async function registerPlayerForEvent(
 
   const countRegistrations = async (type: "principal" | "substitute") => {
     const { count } = await supabase
-      .from("caxetao_registrations")
+      .from("cachetao_registrations")
       .select("id", { count: "exact", head: true })
-      .eq("caxetao_event_id", event.id)
+      .eq("cachetao_event_id", event.id)
       .eq("registration_type", type)
       .neq("status", "cancelled");
     return count ?? 0;
@@ -120,13 +120,13 @@ export async function registerPlayerForEvent(
     if (event.max_substitutes !== null) {
       const substitutesCount = await countRegistrations("substitute");
       if (substitutesCount >= event.max_substitutes) {
-        return { error: "Não há mais vagas, nem de suplente, para este Caxetão." };
+        return { error: "Não há mais vagas, nem de suplente, para este Cachetão." };
       }
     }
     const { data: lastInQueue } = await supabase
-      .from("caxetao_registrations")
+      .from("cachetao_registrations")
       .select("queue_position")
-      .eq("caxetao_event_id", event.id)
+      .eq("cachetao_event_id", event.id)
       .eq("registration_type", "substitute")
       .neq("status", "cancelled")
       .order("queue_position", { ascending: false })
@@ -135,8 +135,8 @@ export async function registerPlayerForEvent(
     queuePosition = (lastInQueue?.queue_position ?? 0) + 1;
   }
 
-  const { error: insertError } = await supabase.from("caxetao_registrations").insert({
-    caxetao_event_id: event.id,
+  const { error: insertError } = await supabase.from("cachetao_registrations").insert({
+    cachetao_event_id: event.id,
     player_id: playerId,
     registration_type: registrationType,
     queue_position: queuePosition,
@@ -144,7 +144,7 @@ export async function registerPlayerForEvent(
 
   if (insertError) {
     if (insertError.code === "23505") {
-      return { error: "Este jogador já está inscrito neste Caxetão." };
+      return { error: "Este jogador já está inscrito neste Cachetão." };
     }
     return { error: insertError.message };
   }
@@ -155,7 +155,7 @@ export async function registerPlayerForEvent(
   // players beyond that limit keep signing up as substitutes (up to
   // max_substitutes). An event with an uncapped substitute queue
   // (max_substitutes null) is therefore never auto-closed by count — only by
-  // the time deadline (syncCaxetaoEventStatus) or an admin.
+  // the time deadline (syncCachetaoEventStatus) or an admin.
   if (principalsCapped) {
     const [finalPrincipals, finalSubstitutes] = await Promise.all([
       countRegistrations("principal"),
@@ -164,7 +164,7 @@ export async function registerPlayerForEvent(
     const principalsFullNow = finalPrincipals >= event.max_principals!;
     const substitutesFullNow = event.max_substitutes !== null && finalSubstitutes >= event.max_substitutes;
     if (principalsFullNow && substitutesFullNow) {
-      await supabase.from("caxetao_events").update({ status: "registrations_closed" }).eq("id", event.id);
+      await supabase.from("cachetao_events").update({ status: "registrations_closed" }).eq("id", event.id);
     }
   }
 

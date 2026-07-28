@@ -21,7 +21,7 @@ export default async function AguardandoAprovacaoPage() {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-6 p-8 text-center">
       <div>
-        <p className="caption">Caxeta Gordinho · Painel</p>
+        <p className="caption">Cacheta Gordinho · Painel</p>
         <h1 className="font-display text-3xl italic font-extrabold uppercase">Aguardando aprovação</h1>
       </div>
       <p className="max-w-md text-ink-dim">

@@ -5,7 +5,7 @@
    Ported from assets/ferrari-design-system.html (:root, lines 11-31).
    Fonts are wired to next/font variables set on <html> in app/layout.tsx
    instead of the original <link> tags. See prd.md §9 for the mapping
-   of each design-system component to its caxeta-specific use.
+   of each design-system component to its cacheta-specific use.
    ============================================================ */
 :root {
   --red: #D2001C;

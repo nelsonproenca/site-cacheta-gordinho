@@ -24,7 +24,7 @@ export default async function LoginPage({
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-8 p-8">
       <div className="text-center">
-        <p className="caption">Caxeta Gordinho · Painel</p>
+        <p className="caption">Cacheta Gordinho · Painel</p>
         <h1 className="font-display text-3xl italic font-extrabold uppercase">Acesso administrativo</h1>
       </div>
       <LoginForm initialError={authErrorMessage(error)} streamers={streamers ?? []} />

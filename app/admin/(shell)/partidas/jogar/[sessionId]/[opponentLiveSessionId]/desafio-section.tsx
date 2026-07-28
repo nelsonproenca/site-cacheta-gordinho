@@ -25,13 +25,13 @@ type Confronto = {
 };
 
 // Detail view of a "desafio" (every confronto ever created between two
-// specific lives — or, reused as-is by /admin/caxetao/jogar/[a]/[b], two
-// Caxetão events — see the parent page) — the "tela de execução" for
+// specific lives — or, reused as-is by /admin/cachetao/jogar/[a]/[b], two
+// Cachetão events — see the parent page) — the "tela de execução" for
 // launching scoring_rule/points per confronto. Jogador 1/2 are read-only
 // here (swapping a player only happens on the criar/montar screen).
 // sessionId/opponentLiveSessionId only ever fed hidden inputs the actions
 // stopped reading once they started deriving revalidation paths from the
-// row's own source columns — kept optional so the Caxetão caller (which has
+// row's own source columns — kept optional so the Cachetão caller (which has
 // no live session ids at all) doesn't need to fake any.
 export function DesafioSection({
   sessionId = "",

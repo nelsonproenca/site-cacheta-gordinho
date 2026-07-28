@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { Modal, ModalHeader } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
-import { CaxetaoRegisterForm } from "./caxetao-register-form";
+import { CachetaoRegisterForm } from "./cachetao-register-form";
 
-export function CaxetaoRegisterModal({ eventId }: { eventId: string }) {
+export function CachetaoRegisterModal({ eventId }: { eventId: string }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -14,8 +14,8 @@ export function CaxetaoRegisterModal({ eventId }: { eventId: string }) {
         Inscreva-se
       </Button>
       <Modal open={open} onClose={() => setOpen(false)}>
-        <ModalHeader title="Inscreva-se no Caxetão" onClose={() => setOpen(false)} />
-        <CaxetaoRegisterForm eventId={eventId} />
+        <ModalHeader title="Inscreva-se no Cachetão" onClose={() => setOpen(false)} />
+        <CachetaoRegisterForm eventId={eventId} />
       </Modal>
     </>
   );

@@ -24,8 +24,8 @@ export default async function JogarPartidaPage() {
     .not("live_session_id", "is", null)
     .order("created_at", { ascending: false });
 
-  // Caxetão-sourced partidas (20260728000031) get their own list at
-  // /admin/caxetao/jogar — this one only ever shows the live-sourced kind.
+  // Cachetão-sourced partidas (20260728000031) get their own list at
+  // /admin/cachetao/jogar — this one only ever shows the live-sourced kind.
   const rows = (partidas ?? [])
     .filter((p) => p.account_a && p.account_b && p.live_session_id && p.opponent_live_session_id)
     .map((p) => ({ ...p, live_session_id: p.live_session_id!, opponent_live_session_id: p.opponent_live_session_id! }));

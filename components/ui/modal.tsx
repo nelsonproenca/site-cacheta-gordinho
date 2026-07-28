@@ -42,7 +42,7 @@ export function Modal({
 }
 
 // Title + close-X row, identical across every modal in the app
-// (register-player-modal.tsx, caxetao-register-modal.tsx) — pulled out here
+// (register-player-modal.tsx, cachetao-register-modal.tsx) — pulled out here
 // instead of copy-pasted at each call site.
 export function ModalHeader({ title, onClose }: { title: string; onClose: () => void }) {
   return (

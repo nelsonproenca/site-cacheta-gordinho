@@ -3,11 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
 import { DesafioSection } from "../../../../partidas/jogar/[sessionId]/[opponentLiveSessionId]/desafio-section";
 
-// Resultado/Pontos launching screen for a Caxetão-sourced desafio — mirrors
+// Resultado/Pontos launching screen for a Cachetão-sourced desafio — mirrors
 // /admin/partidas/jogar/[sessionId]/[opponentLiveSessionId] exactly (same
-// DesafioSection, reused as-is), keyed by the two caxetao_event ids instead
+// DesafioSection, reused as-is), keyed by the two cachetao_event ids instead
 // of live_session ids.
-export default async function DesafioCaxetaoPage({
+export default async function DesafioCachetaoPage({
   params,
 }: {
   params: Promise<{ eventIdA: string; eventIdB: string }>;
@@ -16,8 +16,8 @@ export default async function DesafioCaxetaoPage({
   const supabase = await createClient();
 
   const [{ data: eventA }, { data: eventB }, { data: confrontoRows }] = await Promise.all([
-    supabase.from("caxetao_events").select("id, tiktok_accounts(handle)").eq("id", eventIdA).maybeSingle(),
-    supabase.from("caxetao_events").select("id, tiktok_accounts(handle)").eq("id", eventIdB).maybeSingle(),
+    supabase.from("cachetao_events").select("id, tiktok_accounts(handle)").eq("id", eventIdA).maybeSingle(),
+    supabase.from("cachetao_events").select("id, tiktok_accounts(handle)").eq("id", eventIdB).maybeSingle(),
     supabase
       .from("cross_account_matches")
       .select(
@@ -26,8 +26,8 @@ export default async function DesafioCaxetaoPage({
          opponent_player:players!cross_account_matches_opponent_player_id_fkey(id, display_name, tiktok_handle),
          scoring_rules(name)`,
       )
-      .eq("caxetao_event_id", eventIdA)
-      .eq("opponent_caxetao_event_id", eventIdB)
+      .eq("cachetao_event_id", eventIdA)
+      .eq("opponent_cachetao_event_id", eventIdB)
       .order("created_at", { ascending: true }),
   ]);
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { adminRegisterPlayer, type ActionState } from "@/lib/actions/caxetao";
+import { adminRegisterPlayer, type ActionState } from "@/lib/actions/cachetao";
 import { Field, Input } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 

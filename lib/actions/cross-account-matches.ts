@@ -10,8 +10,8 @@ export type ActionState = { error: string } | { success: string } | null;
 type ConfrontoSource = {
   live_session_id: string | null;
   opponent_live_session_id: string | null;
-  caxetao_event_id: string | null;
-  opponent_caxetao_event_id: string | null;
+  cachetao_event_id: string | null;
+  opponent_cachetao_event_id: string | null;
 };
 
 // Partidas is a global area now (not nested under an account) — every
@@ -19,17 +19,17 @@ type ConfrontoSource = {
 // just-built list under the form), the "jogar" index, and this specific
 // partida's detail page. Reads the row's own source columns rather than
 // trusting caller-supplied ids, so this works for both the live-sourced
-// Partidas flow and the Caxetão-sourced one below without the caller having
+// Partidas flow and the Cachetão-sourced one below without the caller having
 // to know which it is.
 function revalidateConfrontoPaths(row: ConfrontoSource) {
   if (row.live_session_id && row.opponent_live_session_id) {
     revalidatePath("/admin/partidas/criar");
     revalidatePath("/admin/partidas/jogar");
     revalidatePath(`/admin/partidas/jogar/${row.live_session_id}/${row.opponent_live_session_id}`);
-  } else if (row.caxetao_event_id && row.opponent_caxetao_event_id) {
-    revalidatePath("/admin/caxetao/criar");
-    revalidatePath("/admin/caxetao/jogar");
-    revalidatePath(`/admin/caxetao/jogar/${row.caxetao_event_id}/${row.opponent_caxetao_event_id}`);
+  } else if (row.cachetao_event_id && row.opponent_cachetao_event_id) {
+    revalidatePath("/admin/cachetao/criar");
+    revalidatePath("/admin/cachetao/jogar");
+    revalidatePath(`/admin/cachetao/jogar/${row.cachetao_event_id}/${row.opponent_cachetao_event_id}`);
   }
 }
 
@@ -199,34 +199,34 @@ export async function createCrossAccountMatch(
   return { success: "Confronto adicionado." };
 }
 
-type CaxetaoPartidaRow = {
+type CachetaoPartidaRow = {
   id: string;
   account_a_id: string;
   account_b_id: string;
-  caxetao_event_id: string;
-  opponent_caxetao_event_id: string;
+  cachetao_event_id: string;
+  opponent_cachetao_event_id: string;
 };
 
-// Same as resolvePartida above, but the pairing is between two Caxetão
+// Same as resolvePartida above, but the pairing is between two Cachetão
 // events instead of two lives — kept as a separate function rather than a
 // parametrized one, since the two flows are reached from entirely different
 // screens and never mix sources within one partida.
-async function resolveCaxetaoPartida(
+async function resolveCachetaoPartida(
   supabase: Awaited<ReturnType<typeof createClient>>,
   sides: { sideAAccountId: string; sideAEventId: string; sideBAccountId: string; sideBEventId: string },
-): Promise<CaxetaoPartidaRow | null> {
+): Promise<CachetaoPartidaRow | null> {
   const { sideAAccountId, sideAEventId, sideBAccountId, sideBEventId } = sides;
 
   const { data: existing } = await supabase
     .from("partidas")
-    .select("id, account_a_id, account_b_id, caxetao_event_id, opponent_caxetao_event_id")
+    .select("id, account_a_id, account_b_id, cachetao_event_id, opponent_cachetao_event_id")
     .or(
-      `and(caxetao_event_id.eq.${sideAEventId},opponent_caxetao_event_id.eq.${sideBEventId}),` +
-        `and(caxetao_event_id.eq.${sideBEventId},opponent_caxetao_event_id.eq.${sideAEventId})`,
+      `and(cachetao_event_id.eq.${sideAEventId},opponent_cachetao_event_id.eq.${sideBEventId}),` +
+        `and(cachetao_event_id.eq.${sideBEventId},opponent_cachetao_event_id.eq.${sideAEventId})`,
     )
-    .not("caxetao_event_id", "is", null)
+    .not("cachetao_event_id", "is", null)
     .maybeSingle();
-  if (existing) return existing as CaxetaoPartidaRow;
+  if (existing) return existing as CachetaoPartidaRow;
 
   const [{ data: accountA }, { data: accountB }] = await Promise.all([
     supabase.from("tiktok_accounts").select("handle").eq("id", sideAAccountId).maybeSingle(),
@@ -240,12 +240,12 @@ async function resolveCaxetaoPartida(
       name,
       account_a_id: sideAAccountId,
       account_b_id: sideBAccountId,
-      caxetao_event_id: sideAEventId,
-      opponent_caxetao_event_id: sideBEventId,
+      cachetao_event_id: sideAEventId,
+      opponent_cachetao_event_id: sideBEventId,
     })
-    .select("id, account_a_id, account_b_id, caxetao_event_id, opponent_caxetao_event_id")
+    .select("id, account_a_id, account_b_id, cachetao_event_id, opponent_cachetao_event_id")
     .single();
-  if (!asIs.error && asIs.data) return asIs.data as CaxetaoPartidaRow;
+  if (!asIs.error && asIs.data) return asIs.data as CachetaoPartidaRow;
 
   const swapped = await supabase
     .from("partidas")
@@ -253,28 +253,28 @@ async function resolveCaxetaoPartida(
       name,
       account_a_id: sideBAccountId,
       account_b_id: sideAAccountId,
-      caxetao_event_id: sideBEventId,
-      opponent_caxetao_event_id: sideAEventId,
+      cachetao_event_id: sideBEventId,
+      opponent_cachetao_event_id: sideAEventId,
     })
-    .select("id, account_a_id, account_b_id, caxetao_event_id, opponent_caxetao_event_id")
+    .select("id, account_a_id, account_b_id, cachetao_event_id, opponent_cachetao_event_id")
     .single();
-  if (!swapped.error && swapped.data) return swapped.data as CaxetaoPartidaRow;
+  if (!swapped.error && swapped.data) return swapped.data as CachetaoPartidaRow;
 
   return null;
 }
 
 // Same shape as createCrossAccountMatch, but each side's player comes from a
-// Caxetão event's registrations instead of a live's participants — only
+// Cachetão event's registrations instead of a live's participants — only
 // registrations still "in play" (not cancelled/no_show) are eligible.
-export async function createCaxetaoCrossAccountMatch(
+export async function createCachetaoCrossAccountMatch(
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
   const sideAAccountId = String(formData.get("side_a_account_id") ?? "");
-  const sideAEventId = String(formData.get("side_a_caxetao_event_id") ?? "");
+  const sideAEventId = String(formData.get("side_a_cachetao_event_id") ?? "");
   const sideAPlayerId = String(formData.get("side_a_player_id") ?? "");
   const sideBAccountId = String(formData.get("side_b_account_id") ?? "");
-  const sideBEventId = String(formData.get("side_b_caxetao_event_id") ?? "");
+  const sideBEventId = String(formData.get("side_b_cachetao_event_id") ?? "");
   const sideBPlayerId = String(formData.get("side_b_player_id") ?? "");
 
   if (!sideAEventId || !sideAPlayerId || !sideBEventId || !sideBPlayerId) {
@@ -295,9 +295,9 @@ export async function createCaxetaoCrossAccountMatch(
 
   const isEligible = async (eventId: string, playerId: string) => {
     const { data } = await supabase
-      .from("caxetao_registrations")
+      .from("cachetao_registrations")
       .select("player_id")
-      .eq("caxetao_event_id", eventId)
+      .eq("cachetao_event_id", eventId)
       .eq("player_id", playerId)
       .in("status", ["confirmed", "called_up"])
       .maybeSingle();
@@ -311,7 +311,7 @@ export async function createCaxetaoCrossAccountMatch(
     return { error: "Os dois jogadores precisam estar inscritos (e presentes) nos respectivos Caxetões." };
   }
 
-  const partida = await resolveCaxetaoPartida(supabase, {
+  const partida = await resolveCachetaoPartida(supabase, {
     sideAAccountId,
     sideAEventId,
     sideBAccountId,
@@ -325,11 +325,11 @@ export async function createCaxetaoCrossAccountMatch(
 
   const asIs = await supabase.from("cross_account_matches").insert({
     account_id: partida.account_a_id,
-    caxetao_event_id: partida.caxetao_event_id,
-    player_id: playerForEvent(partida.caxetao_event_id),
+    cachetao_event_id: partida.cachetao_event_id,
+    player_id: playerForEvent(partida.cachetao_event_id),
     opponent_account_id: partida.account_b_id,
-    opponent_caxetao_event_id: partida.opponent_caxetao_event_id,
-    opponent_player_id: playerForEvent(partida.opponent_caxetao_event_id),
+    opponent_cachetao_event_id: partida.opponent_cachetao_event_id,
+    opponent_player_id: playerForEvent(partida.opponent_cachetao_event_id),
     partida_id: partida.id,
     created_by: user.id,
   });
@@ -337,11 +337,11 @@ export async function createCaxetaoCrossAccountMatch(
   if (asIs.error) {
     const swapped = await supabase.from("cross_account_matches").insert({
       account_id: partida.account_b_id,
-      caxetao_event_id: partida.opponent_caxetao_event_id,
-      player_id: playerForEvent(partida.opponent_caxetao_event_id),
+      cachetao_event_id: partida.opponent_cachetao_event_id,
+      player_id: playerForEvent(partida.opponent_cachetao_event_id),
       opponent_account_id: partida.account_a_id,
-      opponent_caxetao_event_id: partida.caxetao_event_id,
-      opponent_player_id: playerForEvent(partida.caxetao_event_id),
+      opponent_cachetao_event_id: partida.cachetao_event_id,
+      opponent_player_id: playerForEvent(partida.cachetao_event_id),
       partida_id: partida.id,
       created_by: user.id,
     });
@@ -350,13 +350,13 @@ export async function createCaxetaoCrossAccountMatch(
     }
   }
 
-  revalidatePath("/admin/caxetao/criar");
-  revalidatePath(`/admin/caxetao/criar/${partida.id}`);
-  revalidatePath("/admin/caxetao/jogar");
+  revalidatePath("/admin/cachetao/criar");
+  revalidatePath(`/admin/cachetao/criar/${partida.id}`);
+  revalidatePath("/admin/cachetao/jogar");
   return { success: "Confronto adicionado." };
 }
 
-// Deletes the ranking-credit side effect of a previously-launched Caxetão
+// Deletes the ranking-credit side effect of a previously-launched Cachetão
 // result (see setCrossAccountMatchPoints) — called whenever the winner
 // changes or the confronto itself is removed, so a stale mirrored match
 // never keeps crediting an account that isn't actually correct anymore. No-op
@@ -379,7 +379,7 @@ export async function setCrossAccountMatchWinner(formData: FormData) {
 
   const { data: current } = await supabase
     .from("cross_account_matches")
-    .select("winner, points_awarded, live_session_id, opponent_live_session_id, caxetao_event_id, opponent_caxetao_event_id")
+    .select("winner, points_awarded, live_session_id, opponent_live_session_id, cachetao_event_id, opponent_cachetao_event_id")
     .eq("id", matchId)
     .maybeSingle();
   if (!current) return;
@@ -402,7 +402,7 @@ export async function setCrossAccountMatchWinner(formData: FormData) {
 // confronto). scoring_rules is global (20260725000028) — no longer scoped
 // per account, so any active rule can apply to whichever side won.
 //
-// Caxetão-sourced confrontos additionally mirror the result into a real
+// Cachetão-sourced confrontos additionally mirror the result into a real
 // `matches`/`match_results` row for the WINNER's own account, so it counts
 // toward that account's regular ranking — a deliberate exception to the
 // "cross_account_matches never touches ranking" isolation everywhere else in
@@ -426,7 +426,7 @@ export async function setCrossAccountMatchPoints(
   const { data: match } = await supabase
     .from("cross_account_matches")
     .select(
-      "winner, account_id, opponent_account_id, player_id, opponent_player_id, live_session_id, opponent_live_session_id, caxetao_event_id, opponent_caxetao_event_id",
+      "winner, account_id, opponent_account_id, player_id, opponent_player_id, live_session_id, opponent_live_session_id, cachetao_event_id, opponent_cachetao_event_id",
     )
     .eq("id", matchId)
     .maybeSingle();
@@ -440,14 +440,14 @@ export async function setCrossAccountMatchPoints(
     .maybeSingle();
   if (!rule) return { error: "Regra de pontuação não encontrada." };
 
-  const isCaxetao = !!match.caxetao_event_id;
+  const isCachetao = !!match.cachetao_event_id;
   let winnerAccountId: string | null = null;
   let winnerEventId: string | null = null;
   let winnerPlayerId: string | null = null;
 
-  if (isCaxetao) {
+  if (isCachetao) {
     winnerAccountId = match.winner === "player" ? match.account_id : match.opponent_account_id;
-    winnerEventId = match.winner === "player" ? match.caxetao_event_id : match.opponent_caxetao_event_id;
+    winnerEventId = match.winner === "player" ? match.cachetao_event_id : match.opponent_cachetao_event_id;
     winnerPlayerId = match.winner === "player" ? match.player_id : match.opponent_player_id;
 
     const { data: openPeriod } = await supabase
@@ -481,7 +481,7 @@ export async function setCrossAccountMatchPoints(
             .from("matches")
             .insert({
               tiktok_account_id: winnerAccountId!,
-              caxetao_event_id: winnerEventId!,
+              cachetao_event_id: winnerEventId!,
               score_period_id: openPeriod.id,
               source_cross_account_match_id: matchId,
             })
@@ -510,12 +510,12 @@ export async function setCrossAccountMatchPoints(
   if (error) return { error: error.message };
 
   revalidateConfrontoPaths(match);
-  if (isCaxetao) revalidatePath(`/admin/${winnerAccountId}/ranking`);
+  if (isCachetao) revalidatePath(`/admin/${winnerAccountId}/ranking`);
   return { success: "Resultado salvo." };
 }
 
 // Swaps one side of an already-created confronto for a different player from
-// the same source (live or Caxetão event), instead of removing + recreating
+// the same source (live or Cachetão event), instead of removing + recreating
 // the whole row. "player" pulls from that confronto's own source, "opponent"
 // from its own opponent source — always the row's actual sides, never
 // whatever happens to be selected in the "criar" form.
@@ -535,13 +535,13 @@ export async function swapCrossAccountMatchPlayer(
 
   const { data: match } = await supabase
     .from("cross_account_matches")
-    .select("live_session_id, opponent_live_session_id, caxetao_event_id, opponent_caxetao_event_id")
+    .select("live_session_id, opponent_live_session_id, cachetao_event_id, opponent_cachetao_event_id")
     .eq("id", matchId)
     .maybeSingle();
   if (!match) return { error: "Confronto não encontrado." };
 
   const poolLiveId = side === "player" ? match.live_session_id : match.opponent_live_session_id;
-  const poolEventId = side === "player" ? match.caxetao_event_id : match.opponent_caxetao_event_id;
+  const poolEventId = side === "player" ? match.cachetao_event_id : match.opponent_cachetao_event_id;
 
   let eligible = false;
   if (poolLiveId) {
@@ -554,15 +554,15 @@ export async function swapCrossAccountMatchPlayer(
     eligible = !!data;
   } else if (poolEventId) {
     const { data } = await supabase
-      .from("caxetao_registrations")
+      .from("cachetao_registrations")
       .select("player_id")
-      .eq("caxetao_event_id", poolEventId)
+      .eq("cachetao_event_id", poolEventId)
       .eq("player_id", newPlayerId)
       .in("status", ["confirmed", "called_up"])
       .maybeSingle();
     eligible = !!data;
   }
-  if (!eligible) return { error: "Esse jogador não é participante dessa live/Caxetão." };
+  if (!eligible) return { error: "Esse jogador não é participante dessa live/Cachetão." };
 
   const { error } = await supabase
     .from("cross_account_matches")
@@ -586,7 +586,7 @@ export async function removeCrossAccountMatch(formData: FormData) {
 
   const { data: match } = await supabase
     .from("cross_account_matches")
-    .select("live_session_id, opponent_live_session_id, caxetao_event_id, opponent_caxetao_event_id")
+    .select("live_session_id, opponent_live_session_id, cachetao_event_id, opponent_cachetao_event_id")
     .eq("id", matchId)
     .maybeSingle();
   if (!match) return;

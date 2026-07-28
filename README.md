@@ -1,6 +1,6 @@
-# Caxeta Gordinho
+# Cacheta Gordinho
 
-Plataforma de gestão de lives de Caxeta no TikTok: pontuação manual por partida, ranking semanal/temporada, Caxetão (evento de sábado com inscrição principal/suplente) e gestão multiconta.
+Plataforma de gestão de lives de Cacheta no TikTok: pontuação manual por partida, ranking semanal/temporada, Cachetão (evento de sábado com inscrição principal/suplente) e gestão multiconta.
 
 - **`prd.md`** — requisitos de produto completos (regras de domínio, modelo de dados, roadmap). Leia antes de mexer em qualquer coisa relacionada a regras de negócio.
 - **`CLAUDE.md`** — o que já foi implementado, decisões arquiteturais e "gotchas" conhecidos. Leia antes de mexer em código.

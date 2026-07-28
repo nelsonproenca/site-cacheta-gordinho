@@ -1,12 +1,12 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { registerForCaxetao, type ActionState } from "@/lib/actions/caxetao";
+import { registerForCachetao, type ActionState } from "@/lib/actions/cachetao";
 import { Field, Input } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 
-export function CaxetaoRegisterForm({ eventId }: { eventId: string }) {
-  const [state, formAction, pending] = useActionState<ActionState, FormData>(registerForCaxetao, null);
+export function CachetaoRegisterForm({ eventId }: { eventId: string }) {
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(registerForCachetao, null);
   const [formKey, setFormKey] = useState(0);
 
   const [prevState, setPrevState] = useState(state);

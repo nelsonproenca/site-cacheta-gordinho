@@ -1,17 +1,17 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
-import { CaxetaoConfrontoSection } from "../caxetao-confronto-section";
+import { CachetaoConfrontoSection } from "../cachetao-confronto-section";
 
-// Editing an existing Caxetão-sourced partida — reopened from
-// /admin/caxetao/jogar's "Editar" link. Mirrors
+// Editing an existing Cachetão-sourced partida — reopened from
+// /admin/cachetao/jogar's "Editar" link. Mirrors
 // /admin/partidas/criar/[partidaId]: the two sides are immutable once a
 // partida exists (no update policy on partidas at all — 20260727000030),
 // so this page only ever renders them as read-only text; only the player
-// picker (sourced from a fresh caxetao_registrations query on every visit,
+// picker (sourced from a fresh cachetao_registrations query on every visit,
 // so late sign-ups/promotions show up) and the confrontos table (add/swap/
 // remove) stay interactive — and only while both Caxetões haven't finished.
-export default async function EditarCaxetaoPartidaPage({
+export default async function EditarCachetaoPartidaPage({
   params,
 }: {
   params: Promise<{ partidaId: string }>;
@@ -22,7 +22,7 @@ export default async function EditarCaxetaoPartidaPage({
   const { data: partida } = await supabase
     .from("partidas")
     .select(
-      `id, name, caxetao_event_id, opponent_caxetao_event_id,
+      `id, name, cachetao_event_id, opponent_cachetao_event_id,
        account_a:tiktok_accounts!partidas_account_a_id_fkey(id, handle),
        account_b:tiktok_accounts!partidas_account_b_id_fkey(id, handle)`,
     )
@@ -33,19 +33,19 @@ export default async function EditarCaxetaoPartidaPage({
     !partida ||
     !partida.account_a ||
     !partida.account_b ||
-    !partida.caxetao_event_id ||
-    !partida.opponent_caxetao_event_id
+    !partida.cachetao_event_id ||
+    !partida.opponent_cachetao_event_id
   ) {
     notFound();
   }
 
-  const eventIds = [partida.caxetao_event_id, partida.opponent_caxetao_event_id];
+  const eventIds = [partida.cachetao_event_id, partida.opponent_cachetao_event_id];
   const [{ data: eventRows }, { data: registrationRows }] = await Promise.all([
-    supabase.from("caxetao_events").select("id, status").in("id", eventIds),
+    supabase.from("cachetao_events").select("id, status").in("id", eventIds),
     supabase
-      .from("caxetao_registrations")
-      .select("caxetao_event_id, status, players(id, display_name, tiktok_handle)")
-      .in("caxetao_event_id", eventIds)
+      .from("cachetao_registrations")
+      .select("cachetao_event_id, status, players(id, display_name, tiktok_handle)")
+      .in("cachetao_event_id", eventIds)
       .in("status", ["confirmed", "called_up"]),
   ]);
 
@@ -54,13 +54,13 @@ export default async function EditarCaxetaoPartidaPage({
   const eventParticipants: Record<string, { id: string; display_name: string; tiktok_handle: string }[]> = {};
   for (const row of registrationRows ?? []) {
     if (!row.players) continue;
-    (eventParticipants[row.caxetao_event_id] ??= []).push(row.players);
+    (eventParticipants[row.cachetao_event_id] ??= []).push(row.players);
   }
 
   const { data: confrontoRows } = await supabase
     .from("cross_account_matches")
     .select(
-      `id, caxetao_event_id, opponent_caxetao_event_id, winner, points_awarded,
+      `id, cachetao_event_id, opponent_cachetao_event_id, winner, points_awarded,
        player:players!cross_account_matches_player_id_fkey(id, display_name, tiktok_handle),
        opponent_player:players!cross_account_matches_opponent_player_id_fkey(id, display_name, tiktok_handle),
        scoring_rules(name)`,
@@ -69,11 +69,11 @@ export default async function EditarCaxetaoPartidaPage({
     .order("created_at", { ascending: true });
 
   const confrontos = (confrontoRows ?? [])
-    .filter((c) => c.player && c.opponent_player && c.caxetao_event_id && c.opponent_caxetao_event_id)
+    .filter((c) => c.player && c.opponent_player && c.cachetao_event_id && c.opponent_cachetao_event_id)
     .map((c) => ({
       id: c.id,
-      caxetaoEventId: c.caxetao_event_id!,
-      opponentCaxetaoEventId: c.opponent_caxetao_event_id!,
+      cachetaoEventId: c.cachetao_event_id!,
+      opponentCachetaoEventId: c.opponent_cachetao_event_id!,
       player: c.player!,
       opponentPlayer: c.opponent_player!,
       winner: c.winner as "player" | "opponent" | null,
@@ -85,7 +85,7 @@ export default async function EditarCaxetaoPartidaPage({
   let winsB = 0;
   for (const c of confrontos) {
     if (!c.winner) continue;
-    const accountAWon = c.winner === (c.caxetaoEventId === partida.caxetao_event_id ? "player" : "opponent");
+    const accountAWon = c.winner === (c.cachetaoEventId === partida.cachetao_event_id ? "player" : "opponent");
     if (accountAWon) winsA += 1;
     else winsB += 1;
   }
@@ -119,7 +119,7 @@ export default async function EditarCaxetaoPartidaPage({
         </Card>
       )}
 
-      <CaxetaoConfrontoSection
+      <CachetaoConfrontoSection
         accounts={[]}
         events={[]}
         eventParticipants={eventParticipants}
@@ -130,10 +130,10 @@ export default async function EditarCaxetaoPartidaPage({
           name: partida.name,
           accountAId: partida.account_a.id,
           accountAHandle: partida.account_a.handle,
-          caxetaoEventId: partida.caxetao_event_id,
+          cachetaoEventId: partida.cachetao_event_id,
           accountBId: partida.account_b.id,
           accountBHandle: partida.account_b.handle,
-          opponentCaxetaoEventId: partida.opponent_caxetao_event_id,
+          opponentCachetaoEventId: partida.opponent_cachetao_event_id,
         }}
       />
     </div>

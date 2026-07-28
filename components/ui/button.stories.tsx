@@ -12,7 +12,7 @@ const meta = {
     },
     size: { control: "select", options: ["default", "sm", "lg"] },
   },
-  args: { children: "Criar Caxetão" },
+  args: { children: "Criar Cachetão" },
 } satisfies Meta<typeof Button>;
 
 export default meta;

@@ -44,8 +44,8 @@ const monoFont = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
-  title: "Caxeta Gordinho",
-  description: "Gestão de lives, ranking, Caxetão e campeonatos de Caxeta.",
+  title: "Cacheta Gordinho",
+  description: "Gestão de lives, ranking, Cachetão e campeonatos de Cacheta.",
 };
 
 export default async function RootLayout({
@@ -75,7 +75,7 @@ export default async function RootLayout({
             every screen. */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-stroke">
           <Link href="/" className="font-display italic font-extrabold uppercase">
-            Caxetão do <span className="text-red">Gordinho</span>
+            Cachetão do <span className="text-red">Gordinho</span>
           </Link>
           <div className="flex items-center gap-3">
             <ThemeToggle />

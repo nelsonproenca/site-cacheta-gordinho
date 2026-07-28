@@ -2,12 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
-  syncCaxetaoEventStatus,
-  CAXETAO_STATUS_LABEL,
-  CAXETAO_STATUS_VARIANT,
-  CAXETAO_CLOSE_RULE_LABEL,
-} from "@/lib/caxetao";
-import { cancelRegistration, markNoShow, startCaxetaoEvent, finishCaxetaoEvent } from "@/lib/actions/caxetao";
+  syncCachetaoEventStatus,
+  CACHETAO_STATUS_LABEL,
+  CACHETAO_STATUS_VARIANT,
+  CACHETAO_CLOSE_RULE_LABEL,
+} from "@/lib/cachetao";
+import { cancelRegistration, markNoShow, startCachetaoEvent, finishCachetaoEvent } from "@/lib/actions/cachetao";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +26,7 @@ function registrationBadge(status: string, registrationType: string) {
   );
 }
 
-export default async function CaxetaoEventPage({
+export default async function CachetaoEventPage({
   params,
 }: {
   params: Promise<{ accountId: string; eventId: string }>;
@@ -34,18 +34,18 @@ export default async function CaxetaoEventPage({
   const { accountId, eventId } = await params;
   const supabase = await createClient();
 
-  const { data: event } = await supabase.from("caxetao_events").select("*").eq("id", eventId).maybeSingle();
+  const { data: event } = await supabase.from("cachetao_events").select("*").eq("id", eventId).maybeSingle();
   if (!event) notFound();
 
   const synced =
     event.status === "scheduled" || event.status === "registrations_open"
-      ? await syncCaxetaoEventStatus(supabase, event)
+      ? await syncCachetaoEventStatus(supabase, event)
       : event;
 
   const { data: registrationRows } = await supabase
-    .from("caxetao_registrations")
+    .from("cachetao_registrations")
     .select("id, registration_type, queue_position, status, players(display_name, tiktok_handle)")
-    .eq("caxetao_event_id", eventId)
+    .eq("cachetao_event_id", eventId)
     .order("registered_at", { ascending: true });
 
   const registrations = registrationRows ?? [];
@@ -71,7 +71,7 @@ export default async function CaxetaoEventPage({
       <Card className="flex flex-row items-center justify-between">
         <div>
           <div className="font-display italic font-bold text-xl uppercase">
-            {formatDate(synced.event_date)} · {CAXETAO_CLOSE_RULE_LABEL[synced.close_rule] ?? synced.close_rule}
+            {formatDate(synced.event_date)} · {CACHETAO_CLOSE_RULE_LABEL[synced.close_rule] ?? synced.close_rule}
           </div>
           <div className="text-ink-dim text-sm">
             {synced.close_rule === "count" ? (
@@ -90,16 +90,16 @@ export default async function CaxetaoEventPage({
         </div>
         <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-3">
-            <Badge variant={CAXETAO_STATUS_VARIANT[synced.status] ?? "neutral"}>
-              {CAXETAO_STATUS_LABEL[synced.status] ?? synced.status}
+            <Badge variant={CACHETAO_STATUS_VARIANT[synced.status] ?? "neutral"}>
+              {CACHETAO_STATUS_LABEL[synced.status] ?? synced.status}
             </Badge>
             {synced.status !== "scheduled" && synced.status !== "registrations_open" && (
-              <Link className="btn btn-outline btn-sm" href={`/admin/${accountId}/partidas/caxetao/${eventId}`}>
+              <Link className="btn btn-outline btn-sm" href={`/admin/${accountId}/partidas/cachetao/${eventId}`}>
                 Partidas
               </Link>
             )}
             {synced.status === "registrations_closed" && (
-              <form action={startCaxetaoEvent}>
+              <form action={startCachetaoEvent}>
                 <input type="hidden" name="event_id" value={eventId} />
                 <input type="hidden" name="tiktok_account_id" value={accountId} />
                 <Button type="submit" variant="outline" size="sm">
@@ -108,7 +108,7 @@ export default async function CaxetaoEventPage({
               </form>
             )}
             {synced.status === "in_progress" && (
-              <form action={finishCaxetaoEvent}>
+              <form action={finishCachetaoEvent}>
                 <input type="hidden" name="event_id" value={eventId} />
                 <input type="hidden" name="tiktok_account_id" value={accountId} />
                 <Button type="submit" variant="outline" size="sm">

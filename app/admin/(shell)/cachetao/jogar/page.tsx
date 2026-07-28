@@ -3,34 +3,34 @@ import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 
-// Global list of Caxetão-sourced partidas — mirrors /admin/partidas/jogar,
-// reading the same `partidas` table filtered to the caxetao_event_id side
+// Global list of Cachetão-sourced partidas — mirrors /admin/partidas/jogar,
+// reading the same `partidas` table filtered to the cachetao_event_id side
 // instead of live_session_id. RLS (partidas_select_either_side) already
 // scopes rows to whatever the logged-in admin has access to, on either side.
-export default async function JogarCaxetaoPage() {
+export default async function JogarCachetaoPage() {
   const supabase = await createClient();
 
   const { data: partidas } = await supabase
     .from("partidas")
     .select(
-      `id, name, created_at, caxetao_event_id, opponent_caxetao_event_id,
+      `id, name, created_at, cachetao_event_id, opponent_cachetao_event_id,
        account_a:tiktok_accounts!partidas_account_a_id_fkey(handle),
        account_b:tiktok_accounts!partidas_account_b_id_fkey(handle)`,
     )
-    .not("caxetao_event_id", "is", null)
+    .not("cachetao_event_id", "is", null)
     .order("created_at", { ascending: false });
 
   const rows = (partidas ?? [])
-    .filter((p) => p.account_a && p.account_b && p.caxetao_event_id && p.opponent_caxetao_event_id)
-    .map((p) => ({ ...p, caxetao_event_id: p.caxetao_event_id!, opponent_caxetao_event_id: p.opponent_caxetao_event_id! }));
+    .filter((p) => p.account_a && p.account_b && p.cachetao_event_id && p.opponent_cachetao_event_id)
+    .map((p) => ({ ...p, cachetao_event_id: p.cachetao_event_id!, opponent_cachetao_event_id: p.opponent_cachetao_event_id! }));
 
-  const eventIds = [...new Set(rows.flatMap((p) => [p.caxetao_event_id, p.opponent_caxetao_event_id]))];
+  const eventIds = [...new Set(rows.flatMap((p) => [p.cachetao_event_id, p.opponent_cachetao_event_id]))];
   const { data: eventRows } = eventIds.length
-    ? await supabase.from("caxetao_events").select("id, status").in("id", eventIds)
+    ? await supabase.from("cachetao_events").select("id, status").in("id", eventIds)
     : { data: [] };
   const eventStatus = new Map((eventRows ?? []).map((e) => [e.id, e.status]));
 
-  const { data: matchRows } = await supabase.from("cross_account_matches").select("partida_id").not("caxetao_event_id", "is", null);
+  const { data: matchRows } = await supabase.from("cross_account_matches").select("partida_id").not("cachetao_event_id", "is", null);
   const counts = new Map<string, number>();
   for (const row of matchRows ?? []) {
     counts.set(row.partida_id, (counts.get(row.partida_id) ?? 0) + 1);
@@ -40,10 +40,10 @@ export default async function JogarCaxetaoPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl italic font-extrabold uppercase">Jogar Caxetão</h1>
+          <h1 className="font-display text-3xl italic font-extrabold uppercase">Jogar Cachetão</h1>
           <p className="text-ink-dim">Partidas montadas, da mais recente para a mais antiga.</p>
         </div>
-        <Link href="/admin/caxetao/jogar/montar" className="btn btn-primary btn-sm">
+        <Link href="/admin/cachetao/jogar/montar" className="btn btn-primary btn-sm">
           Montar confronto
         </Link>
       </div>
@@ -55,8 +55,8 @@ export default async function JogarCaxetaoPage() {
           {rows.map((p) => {
             const count = counts.get(p.id) ?? 0;
             const bothEventsActive =
-              eventStatus.get(p.caxetao_event_id) !== "finished" &&
-              eventStatus.get(p.opponent_caxetao_event_id) !== "finished";
+              eventStatus.get(p.cachetao_event_id) !== "finished" &&
+              eventStatus.get(p.opponent_cachetao_event_id) !== "finished";
             return (
               <Card key={p.id} className="flex flex-row items-center justify-between gap-4">
                 <div>
@@ -69,18 +69,18 @@ export default async function JogarCaxetaoPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <Link href={`/admin/caxetao/jogar/montar/${p.id}`} className="btn btn-outline btn-sm">
+                  <Link href={`/admin/cachetao/jogar/montar/${p.id}`} className="btn btn-outline btn-sm">
                     {bothEventsActive ? "Editar" : "Ver"}
                   </Link>
                   {bothEventsActive ? (
                     <Link
-                      href={`/admin/caxetao/jogar/${p.caxetao_event_id}/${p.opponent_caxetao_event_id}`}
+                      href={`/admin/cachetao/jogar/${p.cachetao_event_id}/${p.opponent_cachetao_event_id}`}
                       className="btn btn-primary btn-sm"
                     >
                       Jogar
                     </Link>
                   ) : (
-                    <span className="text-ink-dim text-sm">Caxetão encerrado</span>
+                    <span className="text-ink-dim text-sm">Cachetão encerrado</span>
                   )}
                 </div>
               </Card>

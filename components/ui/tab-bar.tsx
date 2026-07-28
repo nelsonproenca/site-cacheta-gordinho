@@ -16,7 +16,7 @@ export function TabBar({
   className,
 }: {
   items: TabBarItem[];
-  // Admin sub-routes (e.g. /caxetao/[eventId], /ranking/[periodId]) should
+  // Admin sub-routes (e.g. /cachetao/[eventId], /ranking/[periodId]) should
   // keep their parent tab highlighted; the public pages have no nested
   // routes under a tab, so exact match is enough there.
   matchNested?: boolean;

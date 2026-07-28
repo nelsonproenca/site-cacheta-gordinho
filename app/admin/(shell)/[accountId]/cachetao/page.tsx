@@ -1,18 +1,18 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import {
-  syncCaxetaoEventStatus,
-  CAXETAO_STATUS_LABEL,
-  CAXETAO_STATUS_VARIANT,
-  CAXETAO_CLOSE_RULE_LABEL,
-} from "@/lib/caxetao";
+  syncCachetaoEventStatus,
+  CACHETAO_STATUS_LABEL,
+  CACHETAO_STATUS_VARIANT,
+  CACHETAO_CLOSE_RULE_LABEL,
+} from "@/lib/cachetao";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CreateEventForm } from "./create-event-form";
 import { ClosingCountdown } from "@/components/closing-countdown";
 
-export default async function CaxetaoPage({
+export default async function CachetaoPage({
   params,
 }: {
   params: Promise<{ accountId: string }>;
@@ -21,7 +21,7 @@ export default async function CaxetaoPage({
   const supabase = await createClient();
 
   const { data: rows } = await supabase
-    .from("caxetao_events")
+    .from("cachetao_events")
     .select("*")
     .eq("tiktok_account_id", accountId)
     .order("event_date", { ascending: false });
@@ -32,7 +32,7 @@ export default async function CaxetaoPage({
   const events = await Promise.all(
     (rows ?? []).map((event) =>
       event.status === "scheduled" || event.status === "registrations_open"
-        ? syncCaxetaoEventStatus(supabase, event)
+        ? syncCachetaoEventStatus(supabase, event)
         : event,
     ),
   );
@@ -43,22 +43,22 @@ export default async function CaxetaoPage({
   const eventIds = events.map((e) => e.id);
   const { data: principalRows } = eventIds.length
     ? await supabase
-        .from("caxetao_registrations")
-        .select("caxetao_event_id")
-        .in("caxetao_event_id", eventIds)
+        .from("cachetao_registrations")
+        .select("cachetao_event_id")
+        .in("cachetao_event_id", eventIds)
         .eq("registration_type", "principal")
         .neq("status", "cancelled")
     : { data: [] };
 
   const principalCounts = new Map<string, number>();
   for (const r of principalRows ?? []) {
-    principalCounts.set(r.caxetao_event_id, (principalCounts.get(r.caxetao_event_id) ?? 0) + 1);
+    principalCounts.set(r.cachetao_event_id, (principalCounts.get(r.cachetao_event_id) ?? 0) + 1);
   }
 
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <h2 className="font-display italic font-bold text-xl uppercase mb-4">Novo Caxetão</h2>
+        <h2 className="font-display italic font-bold text-xl uppercase mb-4">Novo Cachetão</h2>
         <CreateEventForm accountId={accountId} />
       </Card>
 
@@ -76,11 +76,11 @@ export default async function CaxetaoPage({
             ));
 
           return (
-            <Link key={event.id} href={`/admin/${accountId}/caxetao/${event.id}`}>
+            <Link key={event.id} href={`/admin/${accountId}/cachetao/${event.id}`}>
               <Card className="flex flex-row items-center justify-between">
                 <div>
                   <div className="font-display italic font-bold text-lg uppercase">
-                    {formatDate(event.event_date)} · {CAXETAO_CLOSE_RULE_LABEL[event.close_rule] ?? event.close_rule}
+                    {formatDate(event.event_date)} · {CACHETAO_CLOSE_RULE_LABEL[event.close_rule] ?? event.close_rule}
                   </div>
                   <div className="text-ink-dim text-sm">
                     {event.close_rule === "count" ? (
@@ -96,14 +96,14 @@ export default async function CaxetaoPage({
                   </div>
                   {thirdLine && <div className="text-sm mt-1">{thirdLine}</div>}
                 </div>
-                <Badge variant={CAXETAO_STATUS_VARIANT[event.status] ?? "neutral"}>
-                  {CAXETAO_STATUS_LABEL[event.status] ?? event.status}
+                <Badge variant={CACHETAO_STATUS_VARIANT[event.status] ?? "neutral"}>
+                  {CACHETAO_STATUS_LABEL[event.status] ?? event.status}
                 </Badge>
               </Card>
             </Link>
           );
         })}
-        {events.length === 0 && <p className="text-ink-dim">Nenhum Caxetão criado ainda.</p>}
+        {events.length === 0 && <p className="text-ink-dim">Nenhum Cachetão criado ainda.</p>}
       </div>
     </div>
   );

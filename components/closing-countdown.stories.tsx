@@ -22,7 +22,7 @@ export const LastMinuteCompact: Story = {
   args: { closesAt: in_(65_000) },
 };
 
-// Public Caxetão page's big "destaque maior" readout.
+// Public Cachetão page's big "destaque maior" readout.
 export const HoursRemainingLarge: Story = {
   args: { closesAt: in_(2 * 3600_000 + 45 * 60_000), size: "lg" },
   render: (args) => (

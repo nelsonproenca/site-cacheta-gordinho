@@ -3,11 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardGrid } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getPeriodRanking, getRanking } from "@/lib/scoring/get-ranking";
-import { syncCaxetaoEventStatus } from "@/lib/caxetao";
+import { syncCachetaoEventStatus } from "@/lib/cachetao";
 import { ClosingCountdown } from "@/components/closing-countdown";
 
 // Public landing page — the primary audience is players (no login: pick a
-// streamer, land on their public ranking/Caxetão/cadastro pages, see
+// streamer, land on their public ranking/Cachetão/cadastro pages, see
 // [accountHandle]/layout.tsx for that nav). Admin access ("Área Restrita")
 // lives in the global masthead (app/layout.tsx), not this page.
 export default async function Home() {
@@ -50,14 +50,14 @@ export default async function Home() {
     }
   }
 
-  let caxetao: {
+  let cachetao: {
     closeRule: string;
     registrationClosesAt: string | null;
     missingPrincipals: number;
   } | null = null;
   if (featured) {
     const { data: event } = await supabase
-      .from("caxetao_events")
+      .from("cachetao_events")
       .select("*")
       .eq("tiktok_account_id", featured.id)
       .neq("status", "finished")
@@ -65,20 +65,20 @@ export default async function Home() {
       .limit(1)
       .maybeSingle();
 
-    const synced = event ? await syncCaxetaoEventStatus(supabase, event) : null;
+    const synced = event ? await syncCachetaoEventStatus(supabase, event) : null;
 
     if (synced?.status === "registrations_open") {
       let missingPrincipals = 0;
       if (synced.close_rule === "count") {
         const { count } = await supabase
-          .from("caxetao_registrations")
+          .from("cachetao_registrations")
           .select("id", { count: "exact", head: true })
-          .eq("caxetao_event_id", synced.id)
+          .eq("cachetao_event_id", synced.id)
           .eq("registration_type", "principal")
           .neq("status", "cancelled");
         missingPrincipals = Math.max((synced.max_principals ?? 0) - (count ?? 0), 0);
       }
-      caxetao = {
+      cachetao = {
         closeRule: synced.close_rule,
         registrationClosesAt: synced.registration_closes_at,
         missingPrincipals,
@@ -121,23 +121,23 @@ export default async function Home() {
             </Card>
           </Link>
         )}
-        {caxetao && featured && (
+        {cachetao && featured && (
           <Link
-            href={`/${featured.handle}/caxetao`}
+            href={`/${featured.handle}/cachetao`}
             className="hidden xl:flex absolute bottom-10 left-6 w-48 -rotate-6 drop-shadow-2xl transition-transform hover:-rotate-3 hover:scale-[1.03]"
           >
             <Card className="card-stat text-center w-full flex flex-col items-center gap-2">
               <Badge variant="green">Inscrições abertas</Badge>
-              {caxetao.closeRule === "count" ? (
+              {cachetao.closeRule === "count" ? (
                 <>
                   <div className="card-label">Vagas restantes</div>
-                  <div className="card-value">{caxetao.missingPrincipals}</div>
+                  <div className="card-value">{cachetao.missingPrincipals}</div>
                 </>
               ) : (
                 <>
-                  <div className="card-label">Caxetão fecha em</div>
-                  {caxetao.registrationClosesAt && (
-                    <ClosingCountdown closesAt={caxetao.registrationClosesAt} size="lg" />
+                  <div className="card-label">Cachetão fecha em</div>
+                  {cachetao.registrationClosesAt && (
+                    <ClosingCountdown closesAt={cachetao.registrationClosesAt} size="lg" />
                   )}
                 </>
               )}
@@ -148,17 +148,17 @@ export default async function Home() {
         <div className="relative flex flex-col items-center gap-7 px-6 sm:px-16 py-20 sm:py-28 text-center">
           <div className="hero-kicker flex items-center gap-2">
             <span className="kicker-dot" />
-            <span className="caption">Plataforma de Caxeta ao vivo</span>
+            <span className="caption">Plataforma de Cacheta ao vivo</span>
           </div>
 
           <h1 className="font-display italic font-black uppercase text-ink leading-[0.95] text-[clamp(40px,7vw,80px)] max-w-4xl">
-            Caxetão do
+            Cachetão do
             <br />
             <span className="text-red">Gordinho do Baralho</span>
           </h1>
 
           <p className="max-w-md text-ink-dim text-lg">
-            Acompanhe o ranking, inscreva-se no Caxetão e veja os resultados das lives — sem
+            Acompanhe o ranking, inscreva-se no Cachetão e veja os resultados das lives — sem
             precisar de cadastro pra navegar.
           </p>
 

@@ -1,18 +1,18 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { syncCaxetaoEventStatus, CAXETAO_STATUS_LABEL, CAXETAO_CLOSE_RULE_LABEL } from "@/lib/caxetao";
+import { syncCachetaoEventStatus, CACHETAO_STATUS_LABEL, CACHETAO_CLOSE_RULE_LABEL } from "@/lib/cachetao";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ClosingCountdown } from "@/components/closing-countdown";
-import { CaxetaoRegisterModal } from "./caxetao-register-modal";
+import { CachetaoRegisterModal } from "./cachetao-register-modal";
 
 // Safety-net revalidation for public pages under live load, same as the
 // ranking page — not the primary invalidation path, just an upper bound on
 // staleness (prd.md §11).
 export const revalidate = 20;
 
-export default async function PublicCaxetaoPage({
+export default async function PublicCachetaoPage({
   params,
 }: {
   params: Promise<{ accountHandle: string }>;
@@ -29,7 +29,7 @@ export default async function PublicCaxetaoPage({
   if (!account) notFound();
 
   const { data: event } = await supabase
-    .from("caxetao_events")
+    .from("cachetao_events")
     .select("*")
     .eq("tiktok_account_id", account.id)
     .neq("status", "finished")
@@ -37,13 +37,13 @@ export default async function PublicCaxetaoPage({
     .limit(1)
     .maybeSingle();
 
-  const synced = event ? await syncCaxetaoEventStatus(supabase, event) : null;
+  const synced = event ? await syncCachetaoEventStatus(supabase, event) : null;
 
   const { data: registrationRows } = synced
     ? await supabase
-        .from("caxetao_registrations")
+        .from("cachetao_registrations")
         .select("registration_type, queue_position, status, players(display_name, tiktok_handle)")
-        .eq("caxetao_event_id", synced.id)
+        .eq("cachetao_event_id", synced.id)
         .neq("status", "cancelled")
     : { data: null };
 
@@ -60,24 +60,24 @@ export default async function PublicCaxetaoPage({
     <main className="flex flex-1 flex-col gap-6 p-8 max-w-2xl mx-auto w-full">
       <div>
         <p className="caption">@{account.handle}</p>
-        <h1 className="font-display text-4xl italic font-extrabold uppercase">Caxetão</h1>
+        <h1 className="font-display text-4xl italic font-extrabold uppercase">Cachetão</h1>
       </div>
 
-      {!synced && <p className="text-ink-dim">Nenhum Caxetão agendado no momento.</p>}
+      {!synced && <p className="text-ink-dim">Nenhum Cachetão agendado no momento.</p>}
 
       {synced && (
         <>
           <Card className="flex flex-row items-center justify-between">
             <div>
               <div className="font-display italic font-bold text-xl uppercase">
-                {formatDate(synced.event_date)} · {CAXETAO_CLOSE_RULE_LABEL[synced.close_rule] ?? synced.close_rule}
+                {formatDate(synced.event_date)} · {CACHETAO_CLOSE_RULE_LABEL[synced.close_rule] ?? synced.close_rule}
               </div>
               <p className="text-ink-dim text-sm">
                 Inscrições: {formatDateTime(synced.registration_opens_at)}
                 {synced.registration_closes_at ? ` – ${formatDateTime(synced.registration_closes_at)}` : ""}
               </p>
             </div>
-            <Badge variant={isOpen ? "green" : "neutral"}>{CAXETAO_STATUS_LABEL[synced.status] ?? synced.status}</Badge>
+            <Badge variant={isOpen ? "green" : "neutral"}>{CACHETAO_STATUS_LABEL[synced.status] ?? synced.status}</Badge>
           </Card>
 
           {/* Big, hard-to-miss readout so players can tell at a glance
@@ -101,7 +101,7 @@ export default async function PublicCaxetaoPage({
 
           {isOpen && (
             <div className="flex justify-center">
-              <CaxetaoRegisterModal eventId={synced.id} />
+              <CachetaoRegisterModal eventId={synced.id} />
             </div>
           )}
 

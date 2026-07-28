@@ -23,7 +23,7 @@ export function ClosingCountdown({
 }: {
   closesAt: string;
   // "lg" renders as a big card-stat-style number (see .card-stat in
-  // globals.css) for the public Caxetão page, where players need to spot at
+  // globals.css) for the public Cachetão page, where players need to spot at
   // a glance whether registration is still open — "sm" is the compact inline
   // text used in the admin listing/detail cards.
   size?: "sm" | "lg";

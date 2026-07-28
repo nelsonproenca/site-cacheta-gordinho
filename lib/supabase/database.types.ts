@@ -116,7 +116,7 @@ export type Database = {
           },
         ]
       }
-      caxetao_events: {
+      cachetao_events: {
         Row: {
           close_rule: string
           created_at: string
@@ -158,14 +158,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "caxetao_events_created_by_fkey"
+            foreignKeyName: "cachetao_events_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "admins"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "caxetao_events_tiktok_account_id_fkey"
+            foreignKeyName: "cachetao_events_tiktok_account_id_fkey"
             columns: ["tiktok_account_id"]
             isOneToOne: false
             referencedRelation: "tiktok_accounts"
@@ -173,9 +173,9 @@ export type Database = {
           },
         ]
       }
-      caxetao_registrations: {
+      cachetao_registrations: {
         Row: {
-          caxetao_event_id: string
+          cachetao_event_id: string
           id: string
           player_id: string
           queue_position: number | null
@@ -184,7 +184,7 @@ export type Database = {
           status: string
         }
         Insert: {
-          caxetao_event_id: string
+          cachetao_event_id: string
           id?: string
           player_id: string
           queue_position?: number | null
@@ -193,7 +193,7 @@ export type Database = {
           status?: string
         }
         Update: {
-          caxetao_event_id?: string
+          cachetao_event_id?: string
           id?: string
           player_id?: string
           queue_position?: number | null
@@ -203,14 +203,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "caxetao_registrations_caxetao_event_id_fkey"
-            columns: ["caxetao_event_id"]
+            foreignKeyName: "cachetao_registrations_cachetao_event_id_fkey"
+            columns: ["cachetao_event_id"]
             isOneToOne: false
-            referencedRelation: "caxetao_events"
+            referencedRelation: "cachetao_events"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "caxetao_registrations_player_id_fkey"
+            foreignKeyName: "cachetao_registrations_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
@@ -221,13 +221,13 @@ export type Database = {
       cross_account_matches: {
         Row: {
           account_id: string
-          caxetao_event_id: string | null
+          cachetao_event_id: string | null
           created_at: string
           created_by: string
           id: string
           live_session_id: string | null
           opponent_account_id: string
-          opponent_caxetao_event_id: string | null
+          opponent_cachetao_event_id: string | null
           opponent_live_session_id: string | null
           opponent_player_id: string
           partida_id: string
@@ -238,13 +238,13 @@ export type Database = {
         }
         Insert: {
           account_id: string
-          caxetao_event_id?: string | null
+          cachetao_event_id?: string | null
           created_at?: string
           created_by: string
           id?: string
           live_session_id?: string | null
           opponent_account_id: string
-          opponent_caxetao_event_id?: string | null
+          opponent_cachetao_event_id?: string | null
           opponent_live_session_id?: string | null
           opponent_player_id: string
           partida_id: string
@@ -255,13 +255,13 @@ export type Database = {
         }
         Update: {
           account_id?: string
-          caxetao_event_id?: string | null
+          cachetao_event_id?: string | null
           created_at?: string
           created_by?: string
           id?: string
           live_session_id?: string | null
           opponent_account_id?: string
-          opponent_caxetao_event_id?: string | null
+          opponent_cachetao_event_id?: string | null
           opponent_live_session_id?: string | null
           opponent_player_id?: string
           partida_id?: string
@@ -279,10 +279,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "cross_account_matches_caxetao_event_id_fkey"
-            columns: ["caxetao_event_id"]
+            foreignKeyName: "cross_account_matches_cachetao_event_id_fkey"
+            columns: ["cachetao_event_id"]
             isOneToOne: false
-            referencedRelation: "caxetao_events"
+            referencedRelation: "cachetao_events"
             referencedColumns: ["id"]
           },
           {
@@ -307,10 +307,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "cross_account_matches_opponent_caxetao_event_id_fkey"
-            columns: ["opponent_caxetao_event_id"]
+            foreignKeyName: "cross_account_matches_opponent_cachetao_event_id_fkey"
+            columns: ["opponent_cachetao_event_id"]
             isOneToOne: false
-            referencedRelation: "caxetao_events"
+            referencedRelation: "cachetao_events"
             referencedColumns: ["id"]
           },
           {
@@ -577,7 +577,7 @@ export type Database = {
       }
       matches: {
         Row: {
-          caxetao_event_id: string | null
+          cachetao_event_id: string | null
           id: string
           live_session_id: string | null
           played_at: string
@@ -588,7 +588,7 @@ export type Database = {
           tiktok_account_id: string
         }
         Insert: {
-          caxetao_event_id?: string | null
+          cachetao_event_id?: string | null
           id?: string
           live_session_id?: string | null
           played_at?: string
@@ -599,7 +599,7 @@ export type Database = {
           tiktok_account_id: string
         }
         Update: {
-          caxetao_event_id?: string | null
+          cachetao_event_id?: string | null
           id?: string
           live_session_id?: string | null
           played_at?: string
@@ -611,10 +611,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "matches_caxetao_event_id_fkey"
-            columns: ["caxetao_event_id"]
+            foreignKeyName: "matches_cachetao_event_id_fkey"
+            columns: ["cachetao_event_id"]
             isOneToOne: false
-            referencedRelation: "caxetao_events"
+            referencedRelation: "cachetao_events"
             referencedColumns: ["id"]
           },
           {
@@ -665,37 +665,37 @@ export type Database = {
         Row: {
           account_a_id: string
           account_b_id: string
-          caxetao_event_id: string | null
+          cachetao_event_id: string | null
           created_at: string
           created_by: string | null
           id: string
           live_session_id: string | null
           name: string
-          opponent_caxetao_event_id: string | null
+          opponent_cachetao_event_id: string | null
           opponent_live_session_id: string | null
         }
         Insert: {
           account_a_id: string
           account_b_id: string
-          caxetao_event_id?: string | null
+          cachetao_event_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
           live_session_id?: string | null
           name: string
-          opponent_caxetao_event_id?: string | null
+          opponent_cachetao_event_id?: string | null
           opponent_live_session_id?: string | null
         }
         Update: {
           account_a_id?: string
           account_b_id?: string
-          caxetao_event_id?: string | null
+          cachetao_event_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
           live_session_id?: string | null
           name?: string
-          opponent_caxetao_event_id?: string | null
+          opponent_cachetao_event_id?: string | null
           opponent_live_session_id?: string | null
         }
         Relationships: [
@@ -714,10 +714,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "partidas_caxetao_event_id_fkey"
-            columns: ["caxetao_event_id"]
+            foreignKeyName: "partidas_cachetao_event_id_fkey"
+            columns: ["cachetao_event_id"]
             isOneToOne: false
-            referencedRelation: "caxetao_events"
+            referencedRelation: "cachetao_events"
             referencedColumns: ["id"]
           },
           {
@@ -735,10 +735,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "partidas_opponent_caxetao_event_id_fkey"
-            columns: ["opponent_caxetao_event_id"]
+            foreignKeyName: "partidas_opponent_cachetao_event_id_fkey"
+            columns: ["opponent_cachetao_event_id"]
             isOneToOne: false
-            referencedRelation: "caxetao_events"
+            referencedRelation: "cachetao_events"
             referencedColumns: ["id"]
           },
           {

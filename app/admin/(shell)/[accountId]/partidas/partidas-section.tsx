@@ -24,9 +24,9 @@ type PairedMatch = {
   resultB: PairedResult | null;
 };
 
-// Shared by /partidas/live/[sessionId] and /partidas/caxetao/[eventId] — the
+// Shared by /partidas/live/[sessionId] and /partidas/cachetao/[eventId] — the
 // only difference between the two is which query built `pool`/`matches`
-// (live_participants vs. active caxetao_registrations); everything about
+// (live_participants vs. active cachetao_registrations); everything about
 // pairing two players and launching each side's result independently is
 // identical (see lib/actions/matches.ts, mirroring the per-player pattern
 // already used for lives' single-player results in results-table.tsx).
@@ -40,7 +40,7 @@ export function PartidasSection({
   scoringRules,
 }: {
   accountId: string;
-  sourceType: "live" | "caxetao";
+  sourceType: "live" | "cachetao";
   sourceId: string;
   sourceOpen: boolean;
   pool: Player[];
@@ -137,7 +137,7 @@ function NewMatchForm({
   pool,
 }: {
   accountId: string;
-  sourceType: "live" | "caxetao";
+  sourceType: "live" | "cachetao";
   sourceId: string;
   pool: Player[];
 }) {
@@ -210,7 +210,7 @@ function ResultForm({
   onDone,
 }: {
   accountId: string;
-  sourceType: "live" | "caxetao";
+  sourceType: "live" | "cachetao";
   sourceId: string;
   matchId: string;
   player: Player;
@@ -281,7 +281,7 @@ function RemoveMatchButton({
   match,
 }: {
   accountId: string;
-  sourceType: "live" | "caxetao";
+  sourceType: "live" | "cachetao";
   sourceId: string;
   match: PairedMatch;
 }) {

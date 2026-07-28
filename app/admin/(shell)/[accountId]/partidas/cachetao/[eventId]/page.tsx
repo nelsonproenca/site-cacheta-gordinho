@@ -1,12 +1,12 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { syncCaxetaoEventStatus, CAXETAO_STATUS_LABEL, CAXETAO_STATUS_VARIANT } from "@/lib/caxetao";
+import { syncCachetaoEventStatus, CACHETAO_STATUS_LABEL, CACHETAO_STATUS_VARIANT } from "@/lib/cachetao";
 import { formatDate } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PartidasSection } from "../../partidas-section";
 
-export default async function PartidasCaxetaoPage({
+export default async function PartidasCachetaoPage({
   params,
 }: {
   params: Promise<{ accountId: string; eventId: string }>;
@@ -14,21 +14,21 @@ export default async function PartidasCaxetaoPage({
   const { accountId, eventId } = await params;
   const supabase = await createClient();
 
-  const { data: event } = await supabase.from("caxetao_events").select("*").eq("id", eventId).maybeSingle();
+  const { data: event } = await supabase.from("cachetao_events").select("*").eq("id", eventId).maybeSingle();
   if (!event) notFound();
 
   const synced =
     event.status === "scheduled" || event.status === "registrations_open"
-      ? await syncCaxetaoEventStatus(supabase, event)
+      ? await syncCachetaoEventStatus(supabase, event)
       : event;
 
   const sourceOpen = synced.status !== "scheduled" && synced.status !== "registrations_open";
 
   const [{ data: registrationRows }, { data: scoringRules }, { data: matchRows }] = await Promise.all([
     supabase
-      .from("caxetao_registrations")
+      .from("cachetao_registrations")
       .select("players(id, display_name, tiktok_handle)")
-      .eq("caxetao_event_id", eventId)
+      .eq("cachetao_event_id", eventId)
       .in("status", ["confirmed", "called_up"]),
     supabase
       .from("scoring_rules")
@@ -43,7 +43,7 @@ export default async function PartidasCaxetaoPage({
          player_b:players!matches_player_b_id_fkey(id, display_name, tiktok_handle),
          match_results(id, player_id, scoring_rule_id, points_awarded, scoring_rules(name))`,
       )
-      .eq("caxetao_event_id", eventId)
+      .eq("cachetao_event_id", eventId)
       .not("player_a_id", "is", null),
   ]);
 
@@ -65,14 +65,14 @@ export default async function PartidasCaxetaoPage({
     <div className="flex flex-col gap-6">
       <Card className="flex flex-row items-center justify-between">
         <span className="mono-data text-lg">{formatDate(synced.event_date)}</span>
-        <Badge variant={CAXETAO_STATUS_VARIANT[synced.status] ?? "neutral"}>
-          {CAXETAO_STATUS_LABEL[synced.status] ?? synced.status}
+        <Badge variant={CACHETAO_STATUS_VARIANT[synced.status] ?? "neutral"}>
+          {CACHETAO_STATUS_LABEL[synced.status] ?? synced.status}
         </Badge>
       </Card>
 
       <PartidasSection
         accountId={accountId}
-        sourceType="caxetao"
+        sourceType="cachetao"
         sourceId={eventId}
         sourceOpen={sourceOpen}
         pool={pool}

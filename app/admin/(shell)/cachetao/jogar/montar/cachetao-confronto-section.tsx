@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import {
-  createCaxetaoCrossAccountMatch,
+  createCachetaoCrossAccountMatch,
   swapCrossAccountMatchPlayer,
   removeCrossAccountMatch,
   type ActionState,
@@ -16,11 +16,11 @@ import { formatDate } from "@/lib/utils";
 
 type Player = { id: string; display_name: string; tiktok_handle: string };
 type Account = { id: string; handle: string; display_name: string };
-type CaxetaoEventOption = { id: string; event_date: string; tiktok_account_id: string; status: string };
+type CachetaoEventOption = { id: string; event_date: string; tiktok_account_id: string; status: string };
 type Confronto = {
   id: string;
-  caxetaoEventId: string;
-  opponentCaxetaoEventId: string;
+  cachetaoEventId: string;
+  opponentCachetaoEventId: string;
   player: Player;
   opponentPlayer: Player;
   winner?: "player" | "opponent" | null;
@@ -32,10 +32,10 @@ type LockedPartida = {
   name: string;
   accountAId: string;
   accountAHandle: string;
-  caxetaoEventId: string;
+  cachetaoEventId: string;
   accountBId: string;
   accountBHandle: string;
-  opponentCaxetaoEventId: string;
+  opponentCachetaoEventId: string;
 };
 
 type Side = {
@@ -47,10 +47,10 @@ type Side = {
 const emptySide: Side = { accountId: "", eventId: "", playerId: null };
 
 // `events` is already pre-filtered by the caller (page.tsx queries
-// caxetao_events with status in registrations_closed/in_progress) —
-// mirrors why the account-scoped Caxetão pairing button only appears once
+// cachetao_events with status in registrations_closed/in_progress) —
+// mirrors why the account-scoped Cachetão pairing button only appears once
 // registrations are closed (CLAUDE.md, "Partidas: pairing 2 players").
-export function CaxetaoConfrontoSection({
+export function CachetaoConfrontoSection({
   accounts,
   events,
   eventParticipants,
@@ -59,7 +59,7 @@ export function CaxetaoConfrontoSection({
   readOnly = false,
 }: {
   accounts: Account[];
-  events: CaxetaoEventOption[];
+  events: CachetaoEventOption[];
   eventParticipants: Record<string, Player[]>;
   confrontos: Confronto[];
   lockedPartida?: LockedPartida | null;
@@ -67,16 +67,16 @@ export function CaxetaoConfrontoSection({
 }) {
   const [sideA, setSideA] = useState<Side>(
     lockedPartida
-      ? { accountId: lockedPartida.accountAId, eventId: lockedPartida.caxetaoEventId, playerId: null }
+      ? { accountId: lockedPartida.accountAId, eventId: lockedPartida.cachetaoEventId, playerId: null }
       : emptySide,
   );
   const [sideB, setSideB] = useState<Side>(
     lockedPartida
-      ? { accountId: lockedPartida.accountBId, eventId: lockedPartida.opponentCaxetaoEventId, playerId: null }
+      ? { accountId: lockedPartida.accountBId, eventId: lockedPartida.opponentCachetaoEventId, playerId: null }
       : emptySide,
   );
 
-  const [state, formAction, pending] = useActionState<ActionState, FormData>(createCaxetaoCrossAccountMatch, null);
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(createCachetaoCrossAccountMatch, null);
   const [prevState, setPrevState] = useState(state);
   if (state !== prevState) {
     setPrevState(state);
@@ -94,12 +94,12 @@ export function CaxetaoConfrontoSection({
     sideA.eventId && sideB.eventId
       ? confrontos.filter(
           (c) =>
-            (c.caxetaoEventId === sideA.eventId && c.opponentCaxetaoEventId === sideB.eventId) ||
-            (c.caxetaoEventId === sideB.eventId && c.opponentCaxetaoEventId === sideA.eventId),
+            (c.cachetaoEventId === sideA.eventId && c.opponentCachetaoEventId === sideB.eventId) ||
+            (c.cachetaoEventId === sideB.eventId && c.opponentCachetaoEventId === sideA.eventId),
         )
       : [];
 
-  // Either Caxetão has already finished — no participant pool left to build
+  // Either Cachetão has already finished — no participant pool left to build
   // a new confronto from, so this renders a plain read-only list instead of
   // the interactive picker below (no add/swap/remove).
   if (readOnly && lockedPartida) {
@@ -124,7 +124,7 @@ export function CaxetaoConfrontoSection({
               </TableHead>
               <TableBody>
                 {confrontos.map((c) => {
-                  const aIsPlayer = c.caxetaoEventId === lockedPartida.caxetaoEventId;
+                  const aIsPlayer = c.cachetaoEventId === lockedPartida.cachetaoEventId;
                   const jogador1 = aIsPlayer ? c.player : c.opponentPlayer;
                   const jogador2 = aIsPlayer ? c.opponentPlayer : c.player;
                   const jogador1Wins = c.winner === (aIsPlayer ? "player" : "opponent");
@@ -196,10 +196,10 @@ export function CaxetaoConfrontoSection({
 
       <form action={formAction} className="mt-6">
         <input type="hidden" name="side_a_account_id" value={sideA.accountId} />
-        <input type="hidden" name="side_a_caxetao_event_id" value={sideA.eventId} />
+        <input type="hidden" name="side_a_cachetao_event_id" value={sideA.eventId} />
         <input type="hidden" name="side_a_player_id" value={sideA.playerId ?? ""} />
         <input type="hidden" name="side_b_account_id" value={sideB.accountId} />
-        <input type="hidden" name="side_b_caxetao_event_id" value={sideB.eventId} />
+        <input type="hidden" name="side_b_cachetao_event_id" value={sideB.eventId} />
         <input type="hidden" name="side_b_player_id" value={sideB.playerId ?? ""} />
         {state && "error" in state && <p className="alert-error mb-3">{state.error}</p>}
         {state && "success" in state && <p className="text-sm text-green mb-3">{state.success}</p>}
@@ -225,7 +225,7 @@ export function CaxetaoConfrontoSection({
                 </TableHead>
                 <TableBody>
                   {relevantConfrontos.map((c) => {
-                    const aIsPlayer = c.caxetaoEventId === sideA.eventId;
+                    const aIsPlayer = c.cachetaoEventId === sideA.eventId;
                     const jogador1 = aIsPlayer ? c.player : c.opponentPlayer;
                     const jogador2 = aIsPlayer ? c.opponentPlayer : c.player;
                     const jogador1Side = aIsPlayer ? "player" : "opponent";
@@ -275,7 +275,7 @@ function SidePicker({
 }: {
   label: string;
   accounts: Account[];
-  events: CaxetaoEventOption[];
+  events: CachetaoEventOption[];
   eventParticipants: Record<string, Player[]>;
   side: Side;
   onChange: (side: Side) => void;
@@ -340,11 +340,11 @@ function SidePicker({
       </Field>
 
       {side.accountId && eventsForAccount.length === 0 && (
-        <p className="text-ink-dim text-sm">Essa conta não tem Caxetão pronto pra jogar no momento.</p>
+        <p className="text-ink-dim text-sm">Essa conta não tem Cachetão pronto pra jogar no momento.</p>
       )}
 
       {side.accountId && eventsForAccount.length > 1 && (
-        <Field label="Caxetão" htmlFor={`event-${label}`}>
+        <Field label="Cachetão" htmlFor={`event-${label}`}>
           <Select
             id={`event-${label}`}
             value={side.eventId}
@@ -420,7 +420,7 @@ function PlayerCell({
         {state && "error" in state && <p className="alert-error mb-3">{state.error}</p>}
         <div className="flex flex-col gap-2">
           {pool.length === 0 ? (
-            <p className="text-ink-dim text-sm">Nenhum outro participante nesse Caxetão.</p>
+            <p className="text-ink-dim text-sm">Nenhum outro participante nesse Cachetão.</p>
           ) : (
             pool.map((p) => (
               <form key={p.id} action={formAction}>

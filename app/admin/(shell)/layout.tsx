@@ -60,11 +60,11 @@ export default async function AdminShellLayout({ children }: { children: React.R
             <UserRound size={16} aria-hidden="true" /> Jogadores
           </Link>
         </NavGroup>
-        <NavGroup label="Caxetão" icon={<Trophy size={15} />} matchPrefixes={["/admin/caxetao"]}>
-          <Link className="nav-item" href="/admin/caxetao/criar">
+        <NavGroup label="Cachetão" icon={<Trophy size={15} />} matchPrefixes={["/admin/cachetao"]}>
+          <Link className="nav-item" href="/admin/cachetao/criar">
             <Plus size={16} aria-hidden="true" /> Criar
           </Link>
-          <Link className="nav-item" href="/admin/caxetao/jogar">
+          <Link className="nav-item" href="/admin/cachetao/jogar">
             <Play size={16} aria-hidden="true" /> Jogar
           </Link>
         </NavGroup>

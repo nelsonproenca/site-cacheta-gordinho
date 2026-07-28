@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { createCaxetaoEvent, type ActionState } from "@/lib/actions/caxetao";
+import { createCachetaoEvent, type ActionState } from "@/lib/actions/cachetao";
 import { Field, Input, Select } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { cn, nowInSaoPauloAsDatetimeLocal } from "@/lib/utils";
@@ -10,12 +10,12 @@ type CloseRule = "time" | "count";
 type Account = { id: string; handle: string; display_name: string };
 
 // accountId is fixed (hidden input) when reached from within an account's
-// own /admin/[accountId]/caxetao page. The global /admin/caxetao/criar entry
+// own /admin/[accountId]/cachetao page. The global /admin/cachetao/criar entry
 // point has no account in the URL, so it passes `accounts` instead and this
-// renders a <select> in its place — same form either way, createCaxetaoEvent
+// renders a <select> in its place — same form either way, createCachetaoEvent
 // doesn't care which path supplied tiktok_account_id.
 export function CreateEventForm({ accountId, accounts }: { accountId: string; accounts?: never } | { accountId?: never; accounts: Account[] }) {
-  const [state, formAction, pending] = useActionState<ActionState, FormData>(createCaxetaoEvent, null);
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(createCachetaoEvent, null);
   const [closeRule, setCloseRule] = useState<CloseRule>("time");
   const [formKey, setFormKey] = useState(0);
 
@@ -79,7 +79,7 @@ export function CreateEventForm({ accountId, accounts }: { accountId: string; ac
         </Field>
 
         <Button type="submit" disabled={pending} className="w-full justify-center">
-          Criar Caxetão
+          Criar Cachetão
         </Button>
       </div>
 

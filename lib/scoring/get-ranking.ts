@@ -51,8 +51,8 @@ function aggregateRanking(rows: ResultRow[]): RankingEntry[] {
 // regardless of score_period. Used where there's no period context (e.g. an
 // account with no score_periods created yet).
 //
-// Excludes Caxetão-sourced matches on purpose (.not("matches.live_session_id",
-// "is", null)) — Caxetão is a separate competition, isolated from the
+// Excludes Cachetão-sourced matches on purpose (.not("matches.live_session_id",
+// "is", null)) — Cachetão is a separate competition, isolated from the
 // weekly/season ranking (see matches_set_score_period, which only ever fills
 // score_period_id for live matches). getPeriodRanking below gets this for
 // free through that same column; this fallback has to filter for it

@@ -17,7 +17,7 @@ export const Admin: Story = {
       { href: "/admin/123/jogadores", label: "Jogadores" },
       { href: "/admin/123/lives", label: "Lives" },
       { href: "/admin/123/ranking", label: "Ranking" },
-      { href: "/admin/123/caxetao", label: "Caxetão" },
+      { href: "/admin/123/cachetao", label: "Cachetão" },
     ],
     matchNested: true,
     className: "pb-3",
@@ -29,7 +29,7 @@ export const Public: Story = {
   args: {
     items: [
       { href: "/streamer/ranking", label: "Ranking" },
-      { href: "/streamer/caxetao", label: "Caxetão" },
+      { href: "/streamer/cachetao", label: "Cachetão" },
       { href: "/streamer/inscricao", label: "Cadastro" },
     ],
     className: "justify-center p-4",

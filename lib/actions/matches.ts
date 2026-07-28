@@ -5,17 +5,17 @@ import { createClient } from "@/lib/supabase/server";
 
 export type ActionState = { error: string } | { success: string } | null;
 
-type SourceType = "live" | "caxetao";
+type SourceType = "live" | "cachetao";
 
 function partidasPath(accountId: string, sourceType: SourceType, sourceId: string) {
-  return `/admin/${accountId}/partidas/${sourceType === "live" ? "live" : "caxetao"}/${sourceId}`;
+  return `/admin/${accountId}/partidas/${sourceType === "live" ? "live" : "cachetao"}/${sourceId}`;
 }
 
 // Mirrors recordMatchResult/updateMatchResult/removeParticipant in
 // lib/actions/lives.ts, but for a `matches` row that pairs two named players
 // (player_a_id/player_b_id, see 20260724000023) instead of the legacy
 // one-player-per-match rows that flow creates. Works identically for a live
-// session or a Caxetão event — matches_validate_account/matches_set_score_period
+// session or a Cachetão event — matches_validate_account/matches_set_score_period
 // (existing triggers) already handle the source-specific account/score_period
 // wiring regardless of which code path inserts the row.
 export async function createPairedMatch(
@@ -51,20 +51,20 @@ export async function createPairedMatch(
     }
   } else {
     const { data: rows } = await supabase
-      .from("caxetao_registrations")
+      .from("cachetao_registrations")
       .select("player_id")
-      .eq("caxetao_event_id", sourceId)
+      .eq("cachetao_event_id", sourceId)
       .in("player_id", [playerAId, playerBId])
       .in("status", ["confirmed", "called_up"]);
     if ((rows?.length ?? 0) !== 2) {
-      return { error: "Os dois jogadores precisam estar confirmados neste Caxetão." };
+      return { error: "Os dois jogadores precisam estar confirmados neste Cachetão." };
     }
   }
 
   const { error } = await supabase.from("matches").insert({
     tiktok_account_id: accountId,
     live_session_id: sourceType === "live" ? sourceId : null,
-    caxetao_event_id: sourceType === "caxetao" ? sourceId : null,
+    cachetao_event_id: sourceType === "cachetao" ? sourceId : null,
     player_a_id: playerAId,
     player_b_id: playerBId,
   });

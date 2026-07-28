@@ -32,8 +32,8 @@ export default async function EditarPartidaPage({
     .eq("id", partidaId)
     .maybeSingle();
 
-  // A partida can now also be Caxetão-sourced (20260728000031) — those live
-  // under /admin/caxetao/criar/[partidaId] instead, this route only ever
+  // A partida can now also be Cachetão-sourced (20260728000031) — those live
+  // under /admin/cachetao/criar/[partidaId] instead, this route only ever
   // handles the live-sourced kind.
   if (!partida || !partida.account_a || !partida.account_b || !partida.live_session_id || !partida.opponent_live_session_id) {
     notFound();

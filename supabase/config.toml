@@ -2,7 +2,7 @@
 # https://supabase.com/docs/guides/local-development/cli/config
 # A string used to distinguish different Supabase projects on the same host. Defaults to the
 # working directory name when running `supabase init`.
-project_id = "site-caxeta-gordinho"
+project_id = "site-cacheta-gordinho"
 
 [api]
 enabled = true
@@ -151,12 +151,18 @@ max_indexes = 5
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-site_url = "https://site-caxeta-gordinho.vercel.app"
+site_url = "https://site-cacheta-gordinho.vercel.app"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
 # Local dev and production both point at /auth/confirm (see lib/actions/auth.ts's
 # `emailRedirectTo`) — this project has no local Supabase instance (see CLAUDE.md), config.toml
-# is pushed straight to the real linked project via `supabase config push`.
-additional_redirect_urls = ["http://localhost:3000/auth/confirm", "https://site-caxeta-gordinho.vercel.app/auth/confirm"]
+# is pushed straight to the real linked project via `supabase config push`. The old
+# site-caxeta-gordinho.vercel.app entry is kept temporarily alongside the renamed project's
+# domain (Vercel project renamed 2026-07-29) — drop it once nothing external still points there.
+additional_redirect_urls = [
+  "http://localhost:3000/auth/confirm",
+  "https://site-cacheta-gordinho.vercel.app/auth/confirm",
+  "https://site-caxeta-gordinho.vercel.app/auth/confirm",
+]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to the local API URL (http://127.0.0.1:<port>/auth/v1).

@@ -1,0 +1,24 @@
+-- Fix for a gap introduced by 20260801000034: `players_select_public`
+-- (20260715000004) is `using (true)` — public read of every column, which
+-- was fine when the table only had display_name/tiktok_handle/whatsapp, but
+-- auth_phone (a verified phone number, real PII) landed on the same
+-- wide-open table. RLS is row-level only, it can't hide a column for a role
+-- that's otherwise allowed to read the row — the actual fix is a column-level
+-- revoke, same mechanism already used to lock down admins.is_super_admin
+-- (20260724000020).
+--
+-- auth_user_id is NOT included in this revoke: unlike auth_phone, it's
+-- filtered on directly by the per-request (authenticated-role) client in
+-- lib/supabase/middleware.ts and app/(player)/minha-conta/page.tsx
+-- (`.eq("auth_user_id", user.id)`) — Postgres requires column-level SELECT
+-- privilege to reference a column in a WHERE clause too, not just the output
+-- list, so revoking it there would break those queries. It isn't sensitive
+-- on its own (just a reference to the caller's own auth.users id).
+--
+-- A player reads their own verified phone from supabase.auth.getUser().phone
+-- (their own session's User object, not a players table read) — see
+-- app/(player)/minha-conta/page.tsx. Nothing else in the app needs to select
+-- auth_phone from the client; the security-definer RPCs (current_player_id,
+-- link_or_create_player) run as the function owner and are unaffected by
+-- this revoke.
+revoke select (auth_phone) on public.players from anon, authenticated;

@@ -255,7 +255,9 @@ otp_expiry = 3600
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.
-enable_signup = false
+# Fase 5 (M0): player login is phone-OTP only, so this has to be on for the
+# player signup/login flow (app/(player)/entrar) to work at all.
+enable_signup = true
 # If enabled, users need to confirm their phone number before signing in.
 enable_confirmations = false
 # Template for sending OTP to users
@@ -263,9 +265,12 @@ template = "Your code is {{ .Code }}"
 # Controls the minimum amount of time that must pass before sending another sms otp.
 max_frequency = "5s"
 
-# Use pre-defined map of phone number to OTP for testing.
-# [auth.sms.test_otp]
-# 4152127777 = "123456"
+# Use pre-defined map of phone number to OTP for testing — no real SMS
+# provider (Twilio) wired up yet (see [auth.sms.twilio] below), so player
+# login/testing during development uses this fixed number/code pair until a
+# real provider is configured. E.164 without the leading '+'.
+[auth.sms.test_otp]
+5511999990000 = "123456"
 
 # Configure logged in session timeouts.
 # [auth.sessions]

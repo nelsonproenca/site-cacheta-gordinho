@@ -8,7 +8,7 @@ import { signOutToHome } from "@/lib/actions/auth";
 // exists. No Radix in this project (CLAUDE.md's mention of it was never
 // actually installed) — a small custom dropdown, same "build it plain"
 // spirit as components/ui/modal.tsx.
-export function AccountMenu() {
+export function AccountMenu({ isAdmin }: { isAdmin: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -32,8 +32,12 @@ export function AccountMenu() {
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-2 w-48 rounded-[var(--radius)] border border-stroke bg-surface shadow-lg z-10 flex flex-col overflow-hidden">
-          <Link href="/admin/contas" className="nav-item" onClick={() => setOpen(false)}>
-            Painel admin
+          <Link
+            href={isAdmin ? "/admin/contas" : "/minha-conta"}
+            className="nav-item"
+            onClick={() => setOpen(false)}
+          >
+            {isAdmin ? "Painel admin" : "Minha conta"}
           </Link>
           <form action={signOutToHome}>
             <button type="submit" className="nav-item w-full text-left">

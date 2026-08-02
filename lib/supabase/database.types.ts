@@ -350,6 +350,158 @@ export type Database = {
           },
         ]
       }
+      live_broadcasts: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          id: string
+          live_session_id: string
+          srs_stream_id: string | null
+          started_at: string | null
+          started_by: string
+          status: string
+          stream_key: string
+          tiktok_account_id: string
+          title: string | null
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          live_session_id: string
+          srs_stream_id?: string | null
+          started_at?: string | null
+          started_by: string
+          status?: string
+          stream_key?: string
+          tiktok_account_id: string
+          title?: string | null
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          live_session_id?: string
+          srs_stream_id?: string | null
+          started_at?: string | null
+          started_by?: string
+          status?: string
+          stream_key?: string
+          tiktok_account_id?: string
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_broadcasts_live_session_id_fkey"
+            columns: ["live_session_id"]
+            isOneToOne: false
+            referencedRelation: "live_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_broadcasts_started_by_fkey"
+            columns: ["started_by"]
+            isOneToOne: false
+            referencedRelation: "admins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_broadcasts_tiktok_account_id_fkey"
+            columns: ["tiktok_account_id"]
+            isOneToOne: false
+            referencedRelation: "tiktok_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_chat_messages: {
+        Row: {
+          body: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          live_broadcast_id: string
+          player_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          live_broadcast_id: string
+          player_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          live_broadcast_id?: string
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_chat_messages_live_broadcast_id_fkey"
+            columns: ["live_broadcast_id"]
+            isOneToOne: false
+            referencedRelation: "live_broadcasts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_chat_messages_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_chat_mutes: {
+        Row: {
+          created_at: string
+          id: string
+          live_broadcast_id: string
+          muted_by: string
+          player_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          live_broadcast_id: string
+          muted_by: string
+          player_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          live_broadcast_id?: string
+          muted_by?: string
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_chat_mutes_live_broadcast_id_fkey"
+            columns: ["live_broadcast_id"]
+            isOneToOne: false
+            referencedRelation: "live_broadcasts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_chat_mutes_muted_by_fkey"
+            columns: ["muted_by"]
+            isOneToOne: false
+            referencedRelation: "admins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_chat_mutes_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       live_participants: {
         Row: {
           id: string
@@ -752,6 +904,8 @@ export type Database = {
       }
       players: {
         Row: {
+          auth_phone: string | null
+          auth_user_id: string | null
           created_at: string
           display_name: string
           id: string
@@ -760,6 +914,8 @@ export type Database = {
           whatsapp: string | null
         }
         Insert: {
+          auth_phone?: string | null
+          auth_user_id?: string | null
           created_at?: string
           display_name: string
           id?: string
@@ -768,6 +924,8 @@ export type Database = {
           whatsapp?: string | null
         }
         Update: {
+          auth_phone?: string | null
+          auth_user_id?: string | null
           created_at?: string
           display_name?: string
           id?: string
@@ -899,9 +1057,23 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      current_player_id: { Args: never; Returns: string }
       delete_tiktok_account: {
         Args: { p_account_id: string; p_handle_confirmation: string }
         Returns: undefined
+      }
+      get_live_broadcast_public: {
+        Args: { p_id: string }
+        Returns: {
+          ended_at: string
+          id: string
+          live_session_id: string
+          playback_path: string
+          started_at: string
+          status: string
+          tiktok_account_id: string
+          title: string
+        }[]
       }
       has_account_access: {
         Args: { p_tiktok_account_id: string }
@@ -913,6 +1085,37 @@ export type Database = {
       }
       is_approved_admin: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
+      link_or_create_player: {
+        Args: { p_display_name: string; p_tiktok_handle: string }
+        Returns: string
+      }
+      list_live_broadcasts_now: {
+        Args: never
+        Returns: {
+          id: string
+          started_at: string
+          status: string
+          tiktok_account_id: string
+          title: string
+        }[]
+      }
+      send_live_chat_message: {
+        Args: { p_body: string; p_broadcast_id: string }
+        Returns: {
+          body: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          live_broadcast_id: string
+          player_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "live_chat_messages"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       [_ in never]: never

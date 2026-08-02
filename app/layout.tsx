@@ -58,6 +58,15 @@ export default async function RootLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Fase 5: a session can now belong to a player, not just an admin — the
+  // menu's "Painel admin" link would otherwise dead-end a logged-in player
+  // (no admins row, so proxy.ts would just bounce them to /admin/aguardando).
+  let isAdmin = false;
+  if (user) {
+    const { data: admin } = await supabase.from("admins").select("id").eq("id", user.id).maybeSingle();
+    isAdmin = !!admin;
+  }
+
   return (
     <html
       lang="pt-BR"
@@ -80,7 +89,7 @@ export default async function RootLayout({
           <div className="flex items-center gap-3">
             <ThemeToggle />
             {user ? (
-              <AccountMenu />
+              <AccountMenu isAdmin={isAdmin} />
             ) : (
               <Link href="/admin/login" className="btn btn-ghost btn-sm inline-flex items-center gap-2">
                 <span aria-hidden="true">🔒</span> Área Restrita

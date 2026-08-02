@@ -50,5 +50,33 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
+  // Player-facing gate (Fase 5, M0) — independent of the /admin checks above.
+  // "/ao-vivo" is deliberately login-only end to end (prd.md §4.14: "sem
+  // vitrine pública anônima"), so both the listing and a specific broadcast
+  // require a linked player, not just a Supabase session (an admin who never
+  // linked a player, or mid-signup with no players row yet, still redirects).
+  // No "pending" concept here — link_or_create_player runs synchronously
+  // right after OTP verification, there's no approval queue to wait on.
+  const isPlayerProtectedRoute =
+    request.nextUrl.pathname.startsWith("/ao-vivo") || request.nextUrl.pathname.startsWith("/minha-conta");
+
+  if (isPlayerProtectedRoute) {
+    let hasPlayer = false;
+    if (user) {
+      const { data: player } = await supabase
+        .from("players")
+        .select("id")
+        .eq("auth_user_id", user.id)
+        .maybeSingle();
+      hasPlayer = !!player;
+    }
+    if (!hasPlayer) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/entrar";
+      url.search = `?next=${encodeURIComponent(request.nextUrl.pathname)}`;
+      return NextResponse.redirect(url);
+    }
+  }
+
   return supabaseResponse;
 }

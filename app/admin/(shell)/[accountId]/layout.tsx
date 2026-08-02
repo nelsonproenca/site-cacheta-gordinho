@@ -5,6 +5,7 @@ import { TabBar } from "@/components/ui/tab-bar";
 
 const TAB_SEGMENTS = [
   { segment: "lives", label: "Lives" },
+  { segment: "live", label: "Ao vivo" },
   { segment: "ranking", label: "Ranking" },
 ];
 

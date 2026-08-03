@@ -90,7 +90,7 @@ export default async function BroadcastDetailPage({
             </p>
           ) : (
             <>
-              <WhipPublisher publishUrl={buildWhipPublishUrl(mediamtxPath)} />
+              <WhipPublisher publishUrl={buildWhipPublishUrl(mediamtxPath)} broadcastId={broadcastId} />
               <div className="text-sm text-ink-dim">
                 <p>Prefere usar OBS ou outro software? Publique via RTMP:</p>
                 <p className="mono-data break-all">{buildRtmpPublishUrl(mediamtxPath)}</p>

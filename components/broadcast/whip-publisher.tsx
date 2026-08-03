@@ -1,14 +1,15 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
 import { waitForIceGathering } from "./webrtc-utils";
 
 // Hand-rolled WHIP publish (~100 lines, no new dependency) — symmetric to
 // WhepPlayer's playback side. getUserMedia captures the streamer's own
 // camera/mic, a single HTTP POST of the SDP offer to MediaMTX's WHIP
 // endpoint gets back the answer (no trickle ICE signaling channel needed).
-export function WhipPublisher({ publishUrl }: { publishUrl: string }) {
+export function WhipPublisher({ publishUrl, broadcastId }: { publishUrl: string; broadcastId: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -70,6 +71,27 @@ export function WhipPublisher({ publishUrl }: { publishUrl: string }) {
     if (videoRef.current) videoRef.current.srcObject = null;
     setStatus((s) => (s === "error" ? s : "idle"));
   }
+
+  const stopRef = useRef(stop);
+  stopRef.current = stop;
+
+  // "Encerrar transmissão" (the admin page's header button) only flips
+  // live_broadcasts.status in the database — it has no way to reach into
+  // this browser tab's live RTCPeerConnection/camera to actually stop them.
+  // Polling here is what closes that gap: if the DB says this broadcast
+  // isn't 'live' anymore (ended from this same page, or force-ended
+  // elsewhere) while this component still thinks it's publishing, stop the
+  // camera/WHIP session too, instead of leaking a live camera + a stream
+  // MediaMTX still considers published.
+  useEffect(() => {
+    if (status !== "live") return;
+    const supabase = createClient();
+    const interval = setInterval(async () => {
+      const { data } = await supabase.from("live_broadcasts").select("status").eq("id", broadcastId).maybeSingle();
+      if (data && data.status !== "live") stopRef.current();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [status, broadcastId]);
 
   return (
     <div className="flex flex-col gap-3">

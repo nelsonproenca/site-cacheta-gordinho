@@ -50,7 +50,7 @@ export default async function WatchBroadcastPage({
         <p className="text-ink-dim text-sm">A transmissão ainda não está disponível para assistir aqui.</p>
       )}
       {broadcast.playback_path && mediamtxConfigured && (
-        <WhepPlayer playbackUrl={buildWhepPlaybackUrl(broadcast.playback_path)} />
+        <WhepPlayer playbackUrl={buildWhepPlaybackUrl(broadcast.playback_path)} broadcastId={broadcast.id} />
       )}
       {broadcast.status === "created" && (
         <p className="text-ink-dim text-sm">A transmissão ainda não começou.</p>

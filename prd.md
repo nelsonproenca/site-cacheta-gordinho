@@ -179,6 +179,7 @@ O TikTok Login Kit (OAuth oficial) permite apenas que **o próprio usuário** au
 - Infraestrutura: **MediaMTX**, já rodando na VPS do usuário (a mesma instância que atende um produto de câmeras do usuário, "Watchtower" — não é uma instância dedicada) — RTMP de entrada (fallback OBS) e WebRTC nativo (WHIP/WHEP) para o streamer publicar e o espectador assistir direto no navegador, sem plugin.
 - Jogador precisa estar logado (via SMS, 4.10) para assistir — sem vitrine pública anônima para transmissões ao vivo.
 - **Modelo de segurança do path**: no MediaMTX, publicar (WHIP) e assistir (WHEP) usam a mesma URL baseada em path — diferente do desenho original que assumia SRS (onde dava pra separar os dois). O jogador só recebe esse path ao abrir a página de uma transmissão específica (nunca na listagem pública), e só depois que ela já está `ao vivo` de verdade — a proteção real contra um espectador tentar "roubar" o path fica por conta do MediaMTX só aceitar um publisher por vez naquele path.
+- Encerrar a transmissão (pelo painel do streamer) desliga a câmera de quem está transmitindo e desconecta quem está assistindo automaticamente (dentro de alguns segundos), não só marca como encerrada no banco.
 
 ### 4.15 Chat da live
 

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { signOutToHome } from "@/lib/actions/auth";
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -30,6 +31,17 @@ export default async function MinhaContaPage() {
           <p className="text-ink-dim mono-data">@{player.tiktok_handle}</p>
         </div>
         {user.phone && <p className="text-ink-dim text-sm">Telefone verificado: {user.phone}</p>}
+        <div className="flex flex-col gap-2">
+          <Link href="/jogar/treino" className="btn btn-outline w-full">
+            🤖 Treinar contra robôs
+          </Link>
+          <Link href="/jogar/online" className="btn btn-outline w-full">
+            🎮 Jogar online
+          </Link>
+          <Link href="/jogar/ranking" className="btn btn-outline w-full">
+            🏆 Ranking do jogo
+          </Link>
+        </div>
         <form action={signOutToHome}>
           <Button type="submit" variant="outline" className="w-full">
             Sair

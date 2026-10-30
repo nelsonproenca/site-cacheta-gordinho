@@ -172,6 +172,39 @@ export default async function Home() {
         </div>
       </div>
 
+      <div className="flex flex-col items-center gap-6 px-6 sm:px-16 py-16 border-b border-stroke">
+        <div className="text-center">
+          <h2 className="font-display italic font-bold text-xl uppercase text-ink">
+            Jogar Cacheta
+          </h2>
+          <p className="text-ink-dim text-sm mt-1">
+            Jogo de mesa virtual — treine contra robôs ou jogue online com outros jogadores.
+          </p>
+        </div>
+        <div className="w-full max-w-3xl">
+          <CardGrid>
+            <Link href="/jogar/treino">
+              <Card>
+                <span className="font-display italic font-bold text-lg">🤖 Treinar</span>
+                <p className="text-ink-dim text-sm">Jogue sozinho contra robôs para aprender as regras.</p>
+              </Card>
+            </Link>
+            <Link href="/jogar/online">
+              <Card>
+                <span className="font-display italic font-bold text-lg">🎮 Jogar online</span>
+                <p className="text-ink-dim text-sm">Crie ou entre numa mesa online com outros jogadores.</p>
+              </Card>
+            </Link>
+            <Link href="/jogar/ranking">
+              <Card>
+                <span className="font-display italic font-bold text-lg">🏆 Ranking do jogo</span>
+                <p className="text-ink-dim text-sm">Veja quem mais venceu partidas de Cacheta jogável.</p>
+              </Card>
+            </Link>
+          </CardGrid>
+        </div>
+      </div>
+
       <div className="flex flex-col items-center gap-6 px-6 sm:px-16 py-16">
         <h2 className="font-display italic font-bold text-xl uppercase text-ink-dim text-center">
           Escolha um streamer

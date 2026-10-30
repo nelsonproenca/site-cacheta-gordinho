@@ -19,10 +19,10 @@ export default async function OnlineLobbyPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/entrar?next=/jogar/online");
+  if (!user) redirect("/jogar/entrar?next=/jogar/online");
 
   const { data: myPlayerId } = await supabase.rpc("current_player_id");
-  if (!myPlayerId) redirect("/entrar?next=/jogar/online");
+  if (!myPlayerId) redirect("/jogar/entrar?next=/jogar/online");
 
   const { data: mySeats } = await supabase
     .from("cacheta_table_seats")

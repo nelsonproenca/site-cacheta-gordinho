@@ -57,12 +57,19 @@ export async function updateSession(request: NextRequest) {
   // linked a player, or mid-signup with no players row yet, still redirects).
   // No "pending" concept here — link_or_create_player runs synchronously
   // right after OTP verification, there's no approval queue to wait on.
-  // "/jogar" (Fase 6 — jogo de Cacheta jogável) joins the same login-only
-  // gate: no anonymous mesa, same as "/ao-vivo" (spec FR-014).
+  //
+  // "/jogar" (Fase 6 — jogo de Cacheta jogável) used to join this same
+  // login-only gate ("no anonymous mesa", spec FR-014) — reversed per
+  // explicit later decision: a visitor just types a display name and plays
+  // (see lib/actions/player-auth.ts's enterAsGuest, backed by Supabase
+  // Anonymous Auth, not phone OTP). "/ao-vivo" and "/minha-conta" are
+  // untouched and still require the real OTP login.
+  const isJogarRoute = request.nextUrl.pathname.startsWith("/jogar");
+  const isJogarEntrarRoute = request.nextUrl.pathname === "/jogar/entrar";
   const isPlayerProtectedRoute =
     request.nextUrl.pathname.startsWith("/ao-vivo") ||
     request.nextUrl.pathname.startsWith("/minha-conta") ||
-    request.nextUrl.pathname.startsWith("/jogar");
+    (isJogarRoute && !isJogarEntrarRoute);
 
   if (isPlayerProtectedRoute) {
     let hasPlayer = false;
@@ -76,7 +83,7 @@ export async function updateSession(request: NextRequest) {
     }
     if (!hasPlayer) {
       const url = request.nextUrl.clone();
-      url.pathname = "/entrar";
+      url.pathname = isJogarRoute ? "/jogar/entrar" : "/entrar";
       url.search = `?next=${encodeURIComponent(request.nextUrl.pathname)}`;
       return NextResponse.redirect(url);
     }

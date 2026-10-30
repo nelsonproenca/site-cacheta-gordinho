@@ -9,7 +9,7 @@ export default async function TreinoPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/entrar?next=/jogar/treino");
+  if (!user) redirect("/jogar/entrar?next=/jogar/treino");
 
   const { data: tableId, error: createError } = await supabase.rpc("create_cacheta_table", {
     p_mode: "bots",

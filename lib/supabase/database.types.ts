@@ -1366,6 +1366,10 @@ export type Database = {
       is_approved_admin: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
       join_cacheta_table: { Args: { p_table_id: string }; Returns: string }
+      link_or_create_guest_player: {
+        Args: { p_display_name: string }
+        Returns: string
+      }
       link_or_create_player: {
         Args: { p_display_name: string; p_tiktok_handle: string }
         Returns: string

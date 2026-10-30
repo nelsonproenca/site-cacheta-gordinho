@@ -9,10 +9,10 @@ export default async function MesaPage({ params }: { params: Promise<{ tableId: 
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect(`/entrar?next=/jogar/${tableId}`);
+  if (!user) redirect(`/jogar/entrar?next=/jogar/${tableId}`);
 
   const { data: myPlayerId } = await supabase.rpc("current_player_id");
-  if (!myPlayerId) redirect(`/entrar?next=/jogar/${tableId}`);
+  if (!myPlayerId) redirect(`/jogar/entrar?next=/jogar/${tableId}`);
 
   // RLS (cacheta_tables_select_seated) já garante que só quem tem assento
   // nesta mesa consegue ler a linha — um id inválido ou de outra mesa não

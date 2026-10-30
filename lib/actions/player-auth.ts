@@ -67,3 +67,37 @@ export async function verifyPlayerOtp(
 
   redirect(next);
 }
+
+// Cacheta game (/jogar/**) deliberately skips phone-OTP login — the user
+// decided a visitor should just type a display name and play, unlike
+// /ao-vivo and /minha-conta which keep the real login (prd.md §4.14).
+// Supabase Anonymous Auth still issues a real session/auth.uid(), so every
+// RLS policy already keyed off current_player_id() needs no changes — only
+// identity creation differs (see link_or_create_guest_player).
+export async function enterAsGuest(
+  _prevState: PlayerAuthState,
+  formData: FormData,
+): Promise<PlayerAuthState> {
+  const displayName = String(formData.get("display_name") ?? "").trim();
+  const next = String(formData.get("next") ?? "") || "/jogar/treino";
+
+  if (!displayName) return { error: "Informe um nome." };
+
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    const { error: anonError } = await supabase.auth.signInAnonymously();
+    if (anonError) return { error: anonError.message };
+  }
+
+  const { error: linkError } = await supabase.rpc("link_or_create_guest_player", {
+    p_display_name: displayName,
+  });
+  if (linkError) return { error: linkError.message };
+
+  redirect(next);
+}

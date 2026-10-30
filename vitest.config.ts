@@ -6,7 +6,7 @@ import { defineConfig } from "vitest/config";
 // a genuinely hanging request should still time out well before CI would.
 export default defineConfig({
   test: {
-    include: ["tests/**/*.test.ts"],
+    include: ["tests/**/*.test.ts", "lib/**/*.test.ts"],
     testTimeout: 20_000,
     hookTimeout: 30_000,
   },

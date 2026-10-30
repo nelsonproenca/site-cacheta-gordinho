@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.15"
   }
   graphql_public: {
     Tables: {
@@ -112,6 +112,225 @@ export type Database = {
             columns: ["streamer_id"]
             isOneToOne: false
             referencedRelation: "admins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cacheta_hands: {
+        Row: {
+          cards: Json
+          id: string
+          seat_id: string
+          table_id: string
+        }
+        Insert: {
+          cards?: Json
+          id?: string
+          seat_id: string
+          table_id: string
+        }
+        Update: {
+          cards?: Json
+          id?: string
+          seat_id?: string
+          table_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cacheta_hands_seat_id_fkey"
+            columns: ["seat_id"]
+            isOneToOne: true
+            referencedRelation: "cacheta_table_seats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cacheta_hands_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "cacheta_tables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cacheta_moves: {
+        Row: {
+          card: Json | null
+          created_at: string
+          id: string
+          seat_id: string
+          table_id: string
+          type: string
+        }
+        Insert: {
+          card?: Json | null
+          created_at?: string
+          id?: string
+          seat_id: string
+          table_id: string
+          type: string
+        }
+        Update: {
+          card?: Json | null
+          created_at?: string
+          id?: string
+          seat_id?: string
+          table_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cacheta_moves_seat_id_fkey"
+            columns: ["seat_id"]
+            isOneToOne: false
+            referencedRelation: "cacheta_table_seats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cacheta_moves_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "cacheta_tables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cacheta_table_decks: {
+        Row: {
+          monte: Json
+          table_id: string
+        }
+        Insert: {
+          monte?: Json
+          table_id: string
+        }
+        Update: {
+          monte?: Json
+          table_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cacheta_table_decks_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: true
+            referencedRelation: "cacheta_tables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cacheta_table_seats: {
+        Row: {
+          hand_count: number
+          id: string
+          is_bot: boolean
+          joined_at: string
+          player_id: string | null
+          seat_no: number
+          status: string
+          table_id: string
+        }
+        Insert: {
+          hand_count?: number
+          id?: string
+          is_bot?: boolean
+          joined_at?: string
+          player_id?: string | null
+          seat_no: number
+          status?: string
+          table_id: string
+        }
+        Update: {
+          hand_count?: number
+          id?: string
+          is_bot?: boolean
+          joined_at?: string
+          player_id?: string | null
+          seat_no?: number
+          status?: string
+          table_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cacheta_table_seats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cacheta_table_seats_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "cacheta_tables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cacheta_tables: {
+        Row: {
+          coringa: Json | null
+          created_at: string
+          created_by: string
+          discard_pile: Json
+          id: string
+          max_seats: number
+          mode: string
+          monte_count: number
+          status: string
+          turn_deadline_at: string | null
+          turn_seat_id: string | null
+          vira: Json | null
+          winner_seat_id: string | null
+        }
+        Insert: {
+          coringa?: Json | null
+          created_at?: string
+          created_by: string
+          discard_pile?: Json
+          id?: string
+          max_seats: number
+          mode: string
+          monte_count?: number
+          status?: string
+          turn_deadline_at?: string | null
+          turn_seat_id?: string | null
+          vira?: Json | null
+          winner_seat_id?: string | null
+        }
+        Update: {
+          coringa?: Json | null
+          created_at?: string
+          created_by?: string
+          discard_pile?: Json
+          id?: string
+          max_seats?: number
+          mode?: string
+          monte_count?: number
+          status?: string
+          turn_deadline_at?: string | null
+          turn_seat_id?: string | null
+          vira?: Json | null
+          winner_seat_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cacheta_tables_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cacheta_tables_turn_seat_fkey"
+            columns: ["turn_seat_id"]
+            isOneToOne: false
+            referencedRelation: "cacheta_table_seats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cacheta_tables_winner_seat_fkey"
+            columns: ["winner_seat_id"]
+            isOneToOne: false
+            referencedRelation: "cacheta_table_seats"
             referencedColumns: ["id"]
           },
         ]
@@ -1032,9 +1251,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      advance_bot_turn: { Args: { p_table_id: string }; Returns: boolean }
       approve_pending_admin: {
         Args: { p_admin_id: string }
         Returns: undefined
+      }
+      cacheta_advance_turn: { Args: { p_table_id: string }; Returns: undefined }
+      cacheta_caller_seat: { Args: { p_table_id: string }; Returns: string }
+      cacheta_has_seat_at: { Args: { p_table_id: string }; Returns: boolean }
+      cacheta_reshuffle_if_empty: {
+        Args: { p_table_id: string }
+        Returns: undefined
+      }
+      create_cacheta_table: {
+        Args: { p_max_seats: number; p_mode: string }
+        Returns: string
       }
       create_tiktok_account: {
         Args: {
@@ -1062,6 +1293,13 @@ export type Database = {
         Args: { p_account_id: string; p_handle_confirmation: string }
         Returns: undefined
       }
+      discard_card: {
+        Args: { p_card: Json; p_table_id: string }
+        Returns: undefined
+      }
+      draw_from_discard: { Args: { p_table_id: string }; Returns: Json }
+      draw_from_monte: { Args: { p_table_id: string }; Returns: Json }
+      expire_turn: { Args: { p_table_id: string }; Returns: undefined }
       get_live_broadcast_public: {
         Args: { p_id: string }
         Returns: {
@@ -1116,6 +1354,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      start_cacheta_game: { Args: { p_table_id: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
@@ -1134,12 +1373,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1163,11 +1402,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1188,11 +1427,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1213,11 +1452,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1230,11 +1469,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

@@ -57,8 +57,12 @@ export async function updateSession(request: NextRequest) {
   // linked a player, or mid-signup with no players row yet, still redirects).
   // No "pending" concept here — link_or_create_player runs synchronously
   // right after OTP verification, there's no approval queue to wait on.
+  // "/jogar" (Fase 6 — jogo de Cacheta jogável) joins the same login-only
+  // gate: no anonymous mesa, same as "/ao-vivo" (spec FR-014).
   const isPlayerProtectedRoute =
-    request.nextUrl.pathname.startsWith("/ao-vivo") || request.nextUrl.pathname.startsWith("/minha-conta");
+    request.nextUrl.pathname.startsWith("/ao-vivo") ||
+    request.nextUrl.pathname.startsWith("/minha-conta") ||
+    request.nextUrl.pathname.startsWith("/jogar");
 
   if (isPlayerProtectedRoute) {
     let hasPlayer = false;

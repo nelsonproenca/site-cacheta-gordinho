@@ -7,6 +7,7 @@ const meta = {
   title: "Cacheta/HandFan",
   component: HandFan,
   parameters: { layout: "centered" },
+  args: { onToggle: () => {} },
 } satisfies Meta<typeof HandFan>;
 
 export default meta;
@@ -38,6 +39,7 @@ export const WithCoringaHighlighted: Story = {
 
 // Interativa — clicar numa carta alterna sua seleção, mesmo comportamento do uso real em table-board.tsx.
 export const Interactive: Story = {
+  args: { cards: nineCardHand, selected: [], coringa: null },
   render: () => {
     function Wrapper() {
       const [selected, setSelected] = useState<CacheteCard[]>([]);

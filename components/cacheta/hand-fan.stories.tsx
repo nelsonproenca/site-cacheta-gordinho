@@ -13,6 +13,9 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+// Inclui um par duplicado (dois 8 de espadas) de propósito — a Cacheta usa 2
+// baralhos, e a seleção por índice (não por valor) tem que distinguir as duas
+// cópias mesmo com naipe/rank idênticos.
 const nineCardHand: CacheteCard[] = [
   { suit: "copas", rank: 1 },
   { suit: "ouros", rank: 1 },
@@ -20,40 +23,42 @@ const nineCardHand: CacheteCard[] = [
   { suit: "copas", rank: 5 },
   { suit: "ouros", rank: 5 },
   { suit: "paus", rank: 5 },
-  { suit: "copas", rank: 9 },
+  { suit: "espadas", rank: 8 },
+  { suit: "espadas", rank: 8 },
   { suit: "ouros", rank: 9 },
-  { suit: "paus", rank: 9 },
 ];
 
 export const NineCards: Story = {
-  args: { cards: nineCardHand, selected: [], coringa: null },
+  args: { cards: nineCardHand, selectedIndices: [], coringa: null },
 };
 
 export const WithSelection: Story = {
-  args: { cards: nineCardHand, selected: [nineCardHand[0], nineCardHand[1]], coringa: null },
+  args: { cards: nineCardHand, selectedIndices: [0, 1], coringa: null },
+};
+
+export const DuplicateCardOnlyOneSelected: Story = {
+  name: "Carta duplicada — só uma selecionada",
+  args: { cards: nineCardHand, selectedIndices: [6], coringa: null },
 };
 
 export const WithCoringaHighlighted: Story = {
-  args: { cards: nineCardHand, selected: [], coringa: nineCardHand[3] },
+  args: { cards: nineCardHand, selectedIndices: [], coringa: nineCardHand[3] },
 };
 
-// Interativa — clicar numa carta alterna sua seleção, mesmo comportamento do uso real em table-board.tsx.
+// Interativa — clicar numa carta alterna sua seleção e arrastar reordena a
+// exibição, mesmo comportamento do uso real em table-board.tsx.
 export const Interactive: Story = {
-  args: { cards: nineCardHand, selected: [], coringa: null },
+  args: { cards: nineCardHand, selectedIndices: [], coringa: null },
   render: () => {
     function Wrapper() {
-      const [selected, setSelected] = useState<CacheteCard[]>([]);
+      const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
       return (
         <HandFan
           cards={nineCardHand}
-          selected={selected}
+          selectedIndices={selectedIndices}
           coringa={null}
-          onToggle={(card) =>
-            setSelected((prev) =>
-              prev.some((c) => c.suit === card.suit && c.rank === card.rank)
-                ? prev.filter((c) => !(c.suit === card.suit && c.rank === card.rank))
-                : [...prev, card],
-            )
+          onToggle={(index) =>
+            setSelectedIndices((prev) => (prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]))
           }
         />
       );

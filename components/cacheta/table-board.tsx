@@ -10,7 +10,25 @@ import { Card as UiCard } from "@/components/ui/card";
 import { HandFan } from "./hand-fan";
 import { TurnTimer } from "./turn-timer";
 import { MoveLog, type MoveLogEntry } from "./move-log";
-import { RANK_LABEL, SUIT_LABEL, cardsEqual, type Card } from "@/lib/cacheta/cards";
+import { RANK_LABEL, SUIT_LABEL, type Card } from "@/lib/cacheta/cards";
+
+// Mensagens de erro das RPCs (lib/cacheta/*.sql) são texto puro em inglês —
+// traduzidas aqui, só na camada de exibição, em vez de reescrever cada
+// `raise exception` (evita re-tocar migrations já aplicadas por causa só de
+// copy). Mensagem desconhecida cai no fallback (texto original).
+const ERROR_TRANSLATIONS: Record<string, string> = {
+  "it is not your turn": "Não é a sua vez.",
+  "you already drew this turn": "Você já comprou uma carta nesta rodada.",
+  "monte is empty": "O monte acabou.",
+  "discard pile is empty": "Não há carta no descarte.",
+  "draw a card before discarding": "Compre uma carta antes de descartar.",
+  "that card is not in your hand": "Essa carta não está na sua mão.",
+  "you do not have a seat at this table": "Você não tem assento nesta mesa.",
+};
+
+function translateError(message: string): string {
+  return ERROR_TRANSLATIONS[message] ?? message;
+}
 
 type TableRow = {
   id: string;
@@ -47,7 +65,10 @@ export function TableBoard({ tableId, myPlayerId }: { tableId: string; myPlayerI
   const [playerNames, setPlayerNames] = useState<Record<string, string>>({});
   const [myHand, setMyHand] = useState<Card[]>([]);
   const [moves, setMoves] = useState<MoveLogEntry[]>([]);
-  const [selected, setSelected] = useState<Card[]>([]);
+  // Índices em myHand, não valores — a Cacheta usa 2 baralhos, então cartas
+  // repetidas (ex.: duas 8 de espadas) existem na mão, e comparar por valor
+  // selecionava as duas ao clicar numa só.
+  const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const botLoopInFlight = useRef(false);
@@ -113,8 +134,13 @@ export function TableBoard({ tableId, myPlayerId }: { tableId: string; myPlayerI
         (payload) => {
           const row = payload.new as { cards: Card[] } | undefined;
           // RLS só entrega este evento quando a mão é a do próprio chamador
-          // (cacheta_hands_select_own) — nunca a de outro assento.
-          if (row) setMyHand(row.cards ?? []);
+          // (cacheta_hands_select_own) — nunca a de outro assento. A mão
+          // mudou de verdade (comprou/descartou/bateu) — índices
+          // selecionados antigos não correspondem mais às cartas certas.
+          if (row) {
+            setMyHand(row.cards ?? []);
+            setSelectedIndices([]);
+          }
         },
       )
       .subscribe();
@@ -151,8 +177,10 @@ export function TableBoard({ tableId, myPlayerId }: { tableId: string; myPlayerI
     return seat.player_id ? (playerNames[seat.player_id] ?? "Jogador") : "Jogador";
   }
 
-  function toggleCard(card: Card) {
-    setSelected((prev) => (prev.some((c) => cardsEqual(c, card)) ? prev.filter((c) => !cardsEqual(c, card)) : [...prev, card]));
+  const selectedCards = selectedIndices.map((i) => myHand[i]).filter((c): c is Card => !!c);
+
+  function toggleCard(index: number) {
+    setSelectedIndices((prev) => (prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]));
   }
 
   async function handleDraw(source: "monte" | "discard") {
@@ -163,32 +191,32 @@ export function TableBoard({ tableId, myPlayerId }: { tableId: string; myPlayerI
       p_table_id: tableId,
     });
     setBusy(false);
-    if (rpcError) setError(rpcError.message);
+    if (rpcError) setError(translateError(rpcError.message));
   }
 
   async function handleDiscard() {
-    if (selected.length !== 1) return;
+    if (selectedCards.length !== 1) return;
     setBusy(true);
     setError(null);
     const supabase = createClient();
-    const { error: rpcError } = await supabase.rpc("discard_card", { p_table_id: tableId, p_card: selected[0] as never });
+    const { error: rpcError } = await supabase.rpc("discard_card", { p_table_id: tableId, p_card: selectedCards[0] as never });
     setBusy(false);
-    setSelected([]);
-    if (rpcError) setError(rpcError.message);
+    setSelectedIndices([]);
+    if (rpcError) setError(translateError(rpcError.message));
   }
 
   async function handleBater() {
-    if (selected.length !== 9) return;
+    if (selectedCards.length !== 9) return;
     setBusy(true);
     setError(null);
     const formData = new FormData();
-    formData.set("cards", JSON.stringify(selected));
+    formData.set("cards", JSON.stringify(selectedCards));
     const result = await baterCombinacao(tableId, formData);
     setBusy(false);
     if (result && "error" in result) {
-      setError(result.error);
+      setError(translateError(result.error));
     } else {
-      setSelected([]);
+      setSelectedIndices([]);
       router.refresh();
     }
   }
@@ -216,19 +244,32 @@ export function TableBoard({ tableId, myPlayerId }: { tableId: string; myPlayerI
 
   const discardTop = table.discard_pile[table.discard_pile.length - 1] ?? null;
   const canDraw = mySeat && isMyTurn && myHand.length === 9 && table.status === "playing";
-  const canDiscard = mySeat && isMyTurn && myHand.length === 10 && selected.length === 1;
-  const canBater = mySeat && isMyTurn && selected.length === 9;
+  const canDiscard = mySeat && isMyTurn && myHand.length === 10 && selectedCards.length === 1;
+  const canBater = mySeat && isMyTurn && selectedCards.length === 9;
+  const turnLabel = table.turn_seat_id ? seatLabel(table.turn_seat_id) : null;
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex gap-2 flex-wrap">
-          {seats.map((s) => (
-            <Badge key={s.id} variant={s.id === table.turn_seat_id ? "yellow" : "neutral"}>
-              {seatLabel(s.id)} ({s.hand_count}) {s.status === "batido" && "🏆"}
-              {s.status === "eliminated" && "✕"}
-            </Badge>
-          ))}
+        <div className="flex flex-col gap-1">
+          <div className="flex gap-2 flex-wrap">
+            {seats.map((s) => (
+              <Badge
+                key={s.id}
+                variant={s.id === table.turn_seat_id ? "yellow" : "neutral"}
+                className={s.id === table.turn_seat_id ? "animate-pulse" : ""}
+              >
+                {s.id === table.turn_seat_id && "▶ "}
+                {seatLabel(s.id)} ({s.hand_count}) {s.status === "batido" && "🏆"}
+                {s.status === "eliminated" && "✕"}
+              </Badge>
+            ))}
+          </div>
+          {turnLabel && (
+            <p className="text-ink-dim text-xs">
+              Vez de: <span className="text-ink font-bold">{isMyTurn ? "você" : turnLabel}</span>
+            </p>
+          )}
         </div>
         <TurnTimer deadline={table.turn_deadline_at} isMyTurn={isMyTurn} onExpire={handleExpire} />
       </div>
@@ -271,7 +312,7 @@ export function TableBoard({ tableId, myPlayerId }: { tableId: string; myPlayerI
         </div>
       </UiCard>
 
-      <HandFan cards={myHand} selected={selected} onToggle={toggleCard} coringa={table.coringa} />
+      <HandFan cards={myHand} selectedIndices={selectedIndices} onToggle={toggleCard} coringa={table.coringa} />
 
       <div className="flex gap-2 justify-center">
         <Button size="sm" variant="outline" disabled={!canDiscard || busy} onClick={handleDiscard}>

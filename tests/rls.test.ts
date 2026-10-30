@@ -360,3 +360,218 @@ describe("players", () => {
     expect(error).not.toBeNull();
   });
 });
+
+// Fase 6 (specs/001-cacheta-jogo-online): jogo de Cacheta jogável — domínio
+// isolado, com sua própria noção de identidade (players, via
+// current_player_id(), não admins) e fixture própria, aninhada neste mesmo
+// arquivo em vez de duplicar o suite inteiro. Extensão deferida para o fim
+// da fase (T033), por preferência já registrada do usuário — ver
+// feedback_defer_tests_to_phase_end — em vez de uma suite por migration.
+describe("cacheta game", () => {
+  type CachetaPlayer = { authUserId: string; playerId: string; client: SupabaseClient<Database> };
+  const cachetaSuffix = `cacheta_${suffix}`;
+
+  let playerA: CachetaPlayer;
+  let playerB: CachetaPlayer;
+  let outsider: CachetaPlayer;
+  let tableId: string;
+
+  async function createCachetaPlayer(label: string): Promise<CachetaPlayer> {
+    const email = `rlstest-${cachetaSuffix}-${label}@example.com`;
+    const { data: created, error: createErr } = await service.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { actor_type: "player" },
+    });
+    if (createErr || !created.user) throw new Error(`create cacheta player ${label} failed: ${createErr?.message}`);
+
+    const { data: player, error: playerErr } = await service
+      .from("players")
+      .insert({ auth_user_id: created.user.id, tiktok_handle: `${cachetaSuffix}_${label}`, display_name: `Cacheta Test ${label}` })
+      .select("id")
+      .single();
+    if (playerErr || !player) throw new Error(`players insert for ${label} failed: ${playerErr?.message}`);
+
+    const client = createClient<Database>(url, anonKey, { auth: { autoRefreshToken: false, persistSession: false } });
+    const { error: signInErr } = await client.auth.signInWithPassword({ email, password });
+    if (signInErr) throw new Error(`signIn cacheta player ${label} failed: ${signInErr.message}`);
+
+    return { authUserId: created.user.id, playerId: player.id as string, client };
+  }
+
+  beforeAll(async () => {
+    playerA = await createCachetaPlayer("a");
+    playerB = await createCachetaPlayer("b");
+    outsider = await createCachetaPlayer("outsider");
+
+    const { data: createdTableId, error: createErr } = await playerA.client.rpc("create_cacheta_table", {
+      p_mode: "online",
+      p_max_seats: 2,
+    });
+    if (createErr || !createdTableId) throw new Error(`create_cacheta_table failed: ${createErr?.message}`);
+    tableId = createdTableId as string;
+
+    const { error: joinErr } = await playerB.client.rpc("join_cacheta_table", { p_table_id: tableId });
+    if (joinErr) throw new Error(`join_cacheta_table failed: ${joinErr.message}`);
+
+    const { error: startErr } = await playerA.client.rpc("start_cacheta_game", { p_table_id: tableId });
+    if (startErr) throw new Error(`start_cacheta_game failed: ${startErr.message}`);
+  });
+
+  afterAll(async () => {
+    if (tableId) {
+      await service.from("cacheta_game_results").delete().eq("table_id", tableId);
+      await service.from("cacheta_moves").delete().eq("table_id", tableId);
+      await service.from("cacheta_hands").delete().eq("table_id", tableId);
+      await service.from("cacheta_table_decks").delete().eq("table_id", tableId);
+      await service.from("cacheta_table_seats").delete().eq("table_id", tableId);
+      await service.from("cacheta_tables").delete().eq("id", tableId);
+    }
+    for (const p of [playerA, playerB, outsider]) {
+      if (p?.playerId) await service.from("players").delete().eq("id", p.playerId);
+      if (p?.authUserId) await service.auth.admin.deleteUser(p.authUserId);
+    }
+  });
+
+  describe("cacheta_tables", () => {
+    it("a player with no seat cannot read the table", async () => {
+      const { data } = await outsider.client.from("cacheta_tables").select("id").eq("id", tableId);
+      expect(data).toHaveLength(0);
+    });
+
+    it("a seated player can read the table", async () => {
+      const { data, error } = await playerA.client.from("cacheta_tables").select("id").eq("id", tableId);
+      expect(error).toBeNull();
+      expect(data).toHaveLength(1);
+    });
+
+    it("anon cannot read the table (no public select)", async () => {
+      // current_player_id() (used inside the RLS policy) is revoked from
+      // anon entirely (20260801000034) — anon hits a permission-denied error
+      // evaluating the policy itself, not a graceful empty result set.
+      const { data, error } = await anon.from("cacheta_tables").select("id").eq("id", tableId);
+      expect(data ?? []).toHaveLength(0);
+      expect(error).not.toBeNull();
+    });
+
+    it("has no direct insert/update policy — only the RPCs mutate it", async () => {
+      const { error } = await playerA.client.from("cacheta_tables").update({ status: "finished" }).eq("id", tableId);
+      // RLS silently filters the row on UPDATE instead of erroring — the
+      // real assertion is that it has no effect (same pattern used above
+      // for scoring_rules/score_periods/live_sessions).
+      const { data: check } = await service.from("cacheta_tables").select("status").eq("id", tableId).single();
+      expect(error).toBeNull();
+      expect(check?.status).toBe("playing");
+    });
+  });
+
+  describe("cacheta_table_seats", () => {
+    it("a player with no seat cannot read the table's seats", async () => {
+      const { data } = await outsider.client.from("cacheta_table_seats").select("id").eq("table_id", tableId);
+      expect(data).toHaveLength(0);
+    });
+
+    it("a seated player sees both seats at the table", async () => {
+      const { data, error } = await playerA.client.from("cacheta_table_seats").select("id").eq("table_id", tableId);
+      expect(error).toBeNull();
+      expect(data).toHaveLength(2);
+    });
+
+    it("has no direct insert policy — only create_cacheta_table()/join_cacheta_table() create seats", async () => {
+      const { error } = await outsider.client
+        .from("cacheta_table_seats")
+        .insert({ table_id: tableId, seat_no: 99, player_id: outsider.playerId });
+      expect(error).not.toBeNull();
+    });
+  });
+
+  describe("cacheta_hands", () => {
+    it("player A cannot read player B's hand", async () => {
+      const { data: seatB } = await service.from("cacheta_table_seats").select("id").eq("table_id", tableId).eq("player_id", playerB.playerId).single();
+      const { data } = await playerA.client.from("cacheta_hands").select("cards").eq("seat_id", seatB!.id);
+      expect(data).toHaveLength(0);
+    });
+
+    it("player A only ever sees exactly one hand row for the table — their own", async () => {
+      const { data, error } = await playerA.client.from("cacheta_hands").select("seat_id").eq("table_id", tableId);
+      expect(error).toBeNull();
+      expect(data).toHaveLength(1);
+
+      const { data: seatA } = await service.from("cacheta_table_seats").select("id").eq("table_id", tableId).eq("player_id", playerA.playerId).single();
+      expect(data?.[0]?.seat_id).toBe(seatA!.id);
+    });
+
+    it("a non-seated player cannot read any hand at this table", async () => {
+      const { data } = await outsider.client.from("cacheta_hands").select("cards").eq("table_id", tableId);
+      expect(data).toHaveLength(0);
+    });
+
+    it("has no direct write policy — only the RPCs/Server Action mutate hands", async () => {
+      const { data: seatA } = await service.from("cacheta_table_seats").select("id").eq("table_id", tableId).eq("player_id", playerA.playerId).single();
+      const { error } = await playerA.client.from("cacheta_hands").update({ cards: [] }).eq("seat_id", seatA!.id);
+      // RLS silently filters the row on UPDATE instead of erroring — the
+      // real assertion is that the real data is untouched (same pattern as
+      // scoring_rules/score_periods above), not just that no error came back.
+      const { data: check } = await service.from("cacheta_hands").select("cards").eq("seat_id", seatA!.id).single();
+      expect(error).toBeNull();
+      expect((check?.cards as unknown as unknown[]).length).toBe(9);
+    });
+  });
+
+  describe("cacheta_table_decks", () => {
+    it("has no select policy at all — not even the table's own players can read the monte", async () => {
+      const { data: seated } = await playerA.client.from("cacheta_table_decks").select("monte").eq("table_id", tableId);
+      expect(seated ?? []).toHaveLength(0);
+
+      const { data: anonRead } = await anon.from("cacheta_table_decks").select("monte").eq("table_id", tableId);
+      expect(anonRead ?? []).toHaveLength(0);
+    });
+  });
+
+  describe("cacheta_moves", () => {
+    it("a seated player can read the move log", async () => {
+      const { data, error } = await playerA.client.from("cacheta_moves").select("id").eq("table_id", tableId);
+      expect(error).toBeNull();
+      expect(data).not.toBeNull();
+    });
+
+    it("a non-seated player cannot read the move log", async () => {
+      const { data } = await outsider.client.from("cacheta_moves").select("id").eq("table_id", tableId);
+      expect(data).toHaveLength(0);
+    });
+
+    it("has no direct insert policy — only the RPCs/Server Action log moves", async () => {
+      const { data: seatA } = await service.from("cacheta_table_seats").select("id").eq("table_id", tableId).eq("player_id", playerA.playerId).single();
+      const { error } = await playerA.client.from("cacheta_moves").insert({ table_id: tableId, seat_id: seatA!.id, type: "discard" });
+      expect(error).not.toBeNull();
+    });
+  });
+
+  describe("cacheta_game_results", () => {
+    it("anon can read game results (public select, feeds /jogar/ranking)", async () => {
+      const { error } = await anon.from("cacheta_game_results").select("id").eq("table_id", tableId);
+      expect(error).toBeNull();
+    });
+
+    it("has no direct insert policy for authenticated players — only the Server Action writes it", async () => {
+      const { error } = await playerA.client.from("cacheta_game_results").insert({
+        table_id: tableId,
+        winner_player_id: playerA.playerId,
+        combination_type: "batida_normal",
+        points_awarded: 999,
+      });
+      expect(error).not.toBeNull();
+    });
+
+    it("anon cannot insert game results either", async () => {
+      const { error } = await anon.from("cacheta_game_results").insert({
+        table_id: tableId,
+        winner_player_id: playerA.playerId,
+        combination_type: "batida_normal",
+        points_awarded: 999,
+      } as never);
+      expect(error).not.toBeNull();
+    });
+  });
+});

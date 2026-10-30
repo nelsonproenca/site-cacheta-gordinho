@@ -1,12 +1,47 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { validarBatida } from "@/lib/cacheta/rules";
+import { validarBatida, combinationType } from "@/lib/cacheta/rules";
 import { cardsEqual, type Card } from "@/lib/cacheta/cards";
 
 export type ActionState = { error: string } | { success: string } | null;
+
+// Cria uma mesa online e redireciona para ela — mesmo idioma no-arg +
+// redirect() de signOutToHome (lib/actions/auth.ts), usada direto como
+// `<form action={createOnlineTable}>`. Erros (ex. jogador já tem mesa
+// ativa) voltam para o próprio lobby via query string, já que não há como
+// devolver um ActionState para um <form action={fn}> sem useActionState.
+export async function createOnlineTable(): Promise<void> {
+  const supabase = await createClient();
+  const { data: tableId, error } = await supabase.rpc("create_cacheta_table", {
+    p_mode: "online",
+    p_max_seats: 4,
+  });
+  if (error || !tableId) {
+    redirect(`/jogar/online?error=${encodeURIComponent(error?.message ?? "Não foi possível criar a mesa.")}`);
+  }
+  redirect(`/jogar/${tableId}`);
+}
+
+// Entra numa mesa online existente a partir do id informado pelo próprio
+// jogador (compartilhado fora da plataforma, ex. link/código) — não há
+// listagem pública de mesas abertas de outros jogadores (ver research.md/
+// tasks.md T026: "mesas abertas DO JOGADOR", não do sistema todo).
+export async function joinOnlineTable(formData: FormData): Promise<void> {
+  const tableId = String(formData.get("tableId") ?? "").trim();
+  if (!tableId) {
+    redirect(`/jogar/online?error=${encodeURIComponent("Informe o código da mesa.")}`);
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("join_cacheta_table", { p_table_id: tableId });
+  if (error) {
+    redirect(`/jogar/online?error=${encodeURIComponent(error.message)}`);
+  }
+  redirect(`/jogar/${tableId}`);
+}
 
 // "Bater": lê a mão do jogador via o cliente por-requisição (RLS garante que
 // só a própria mão volta — cacheta_hands_select_own), valida a combinação
@@ -22,7 +57,7 @@ export async function baterCombinacao(tableId: string, formData: FormData): Prom
 
   const { data: seat } = await supabase
     .from("cacheta_table_seats")
-    .select("id")
+    .select("id, player_id")
     .eq("table_id", tableId)
     .eq("player_id", myPlayerId)
     .maybeSingle();
@@ -83,10 +118,20 @@ export async function baterCombinacao(tableId: string, formData: FormData): Prom
     .eq("id", tableId);
   await service.from("cacheta_moves").insert({ table_id: tableId, seat_id: seat.id, type: "bater" });
 
-  // Registro de pontuação/ranking do jogo (cacheta_game_results) é US3 —
-  // ver T030 em specs/001-cacheta-jogo-online/tasks.md; esta função é
-  // estendida lá, não reescrita, quando a tabela existir.
+  // Ranking do jogo (US3, cacheta_game_results) — separado por desenho de
+  // match_results (ver data-model.md). Pontuação própria deste domínio,
+  // nunca derivada de scoring_rules: 1/2/3 pontos para batida normal/
+  // quadra/quina, refletindo a dificuldade crescente da combinação.
+  const combType = combinationType(result.groups);
+  const points = combType === "quina" ? 3 : combType === "quadra" ? 2 : 1;
+  await service.from("cacheta_game_results").insert({
+    table_id: tableId,
+    winner_player_id: seat.player_id,
+    combination_type: combType,
+    points_awarded: points,
+  });
 
   revalidatePath(`/jogar/${tableId}`);
+  revalidatePath("/jogar/ranking");
   return { success: "Você bateu! Partida encerrada." };
 }

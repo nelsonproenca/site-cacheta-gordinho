@@ -116,6 +116,48 @@ export type Database = {
           },
         ]
       }
+      cacheta_game_results: {
+        Row: {
+          combination_type: string
+          created_at: string
+          id: string
+          points_awarded: number
+          table_id: string
+          winner_player_id: string | null
+        }
+        Insert: {
+          combination_type: string
+          created_at?: string
+          id?: string
+          points_awarded: number
+          table_id: string
+          winner_player_id?: string | null
+        }
+        Update: {
+          combination_type?: string
+          created_at?: string
+          id?: string
+          points_awarded?: number
+          table_id?: string
+          winner_player_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cacheta_game_results_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: true
+            referencedRelation: "cacheta_tables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cacheta_game_results_winner_player_id_fkey"
+            columns: ["winner_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cacheta_hands: {
         Row: {
           cards: Json
@@ -1323,6 +1365,7 @@ export type Database = {
       }
       is_approved_admin: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
+      join_cacheta_table: { Args: { p_table_id: string }; Returns: string }
       link_or_create_player: {
         Args: { p_display_name: string; p_tiktok_handle: string }
         Returns: string

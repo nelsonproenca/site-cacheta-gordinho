@@ -185,18 +185,18 @@ completa — sem envolver nenhum assento de bot.
 
 ### Implementação da User Story 2
 
-- [ ] T025 [US2] No arquivo de migration de T003–T011/T015: função `join_cacheta_table
+- [X] T025 [US2] No arquivo de migration de T003–T011/T015: função `join_cacheta_table
       (table_id uuid) returns uuid`, `security definer` — ocupa o próximo `seat_no` livre
       de uma mesa `mode = 'online'` e `status = 'waiting'`; rejeita mesa cheia/já iniciada/
       chamador já sentado; mesmo padrão de revoke/grant.
-- [ ] T026 [US2] Criar `app/(player)/jogar/online/page.tsx` — lobby: criar mesa online
+- [X] T026 [US2] Criar `app/(player)/jogar/online/page.tsx` — lobby: criar mesa online
       (`create_cacheta_table` com `mode = 'online'`), listar mesas abertas do jogador, entrar
       numa mesa existente via `join_cacheta_table`.
-- [ ] T027 [US2] Em `app/(player)/jogar/[tableId]/page.tsx` (de T022): cobrir o fluxo
+- [X] T027 [US2] Em `app/(player)/jogar/[tableId]/page.tsx` (de T022): cobrir o fluxo
       `mode = 'online'` — aguardar assentos mínimos preenchidos antes de `start_cacheta_game`
       poder ser chamado pelo criador, e reutilizar os mesmos componentes/sincronização já
       construídos na User Story 1 (nenhuma duplicação de UI entre os dois modos).
-- [ ] T028 [US2] Verificação manual ponta a ponta com duas sessões reais, conforme
+- [X] T028 [US2] Verificação manual ponta a ponta com duas sessões reais, conforme
       `quickstart.md` → M2: confirmar que a mão de um jogador nunca aparece na resposta de
       rede/Realtime do outro, que o estado público propaga em poucos segundos, e que um
       turno ocioso expira corretamente mesmo com dois jogadores reais.
@@ -215,18 +215,18 @@ de ranking do jogo e ver o resultado refletido.
 
 ### Implementação da User Story 3
 
-- [ ] T029 [US3] Em `supabase/migrations/<timestamp>_cacheta_game_results.sql`: criar tabela
+- [X] T029 [US3] Em `supabase/migrations/<timestamp>_cacheta_game_results.sql`: criar tabela
       `cacheta_game_results` (`id`, `table_id` FK **unique**, `winner_player_id` FK
       nullable, `combination_type` `'batida_normal' | 'quadra' | 'quina'`,
       `points_awarded` int, `created_at`); RLS habilitada; policy de SELECT pública (spec
       `FR-013`); sem write direto — só a Server Action de T030.
-- [ ] T030 [US3] Estender `baterCombinacao` (`lib/actions/cacheta.ts`, de T020) para também
+- [X] T030 [US3] Estender `baterCombinacao` (`lib/actions/cacheta.ts`, de T020) para também
       inserir `cacheta_game_results` (vencedor, `combination_type`, `points_awarded`) na
       mesma operação de escrita via `createServiceClient()`.
-- [ ] T031 [US3] Criar `app/(player)/jogar/ranking/page.tsx` — lista jogadores ordenados por
+- [X] T031 [US3] Criar `app/(player)/jogar/ranking/page.tsx` — lista jogadores ordenados por
       pontuação agregada de `cacheta_game_results`, com um rótulo visualmente distinto do
       ranking de pontuação manual de lives já existente no site (spec `SC-006`).
-- [ ] T032 [US3] Confirmar, lendo `lib/scoring/get-ranking.ts`, que nenhuma consulta dali foi
+- [X] T032 [US3] Confirmar, lendo `lib/scoring/get-ranking.ts`, que nenhuma consulta dali foi
       alterada por esta feature — o ranking de lives continua ignorando por completo as
       tabelas `cacheta_*` (regressão explícita, não assumida).
 
@@ -238,17 +238,17 @@ de ranking do jogo e ver o resultado refletido.
 
 **Purpose**: Qualidade e verificação final — não bloqueia nenhuma user story individual.
 
-- [ ] T033 [P] Estender `tests/rls.test.ts` com um `describe` por tabela nova
+- [X] T033 [P] Estender `tests/rls.test.ts` com um `describe` por tabela nova
       (`cacheta_tables`, `cacheta_table_seats`, `cacheta_hands`, `cacheta_moves`,
       `cacheta_game_results`), seguindo o padrão existente (fixtures via cliente
       service-role, asserções de capacidade negativa entre jogadores/mesas — em especial:
       um jogador não pode ler a mão de outro). Feito ao final da fase, não a cada migration
       (preferência já registrada do usuário, constituição Princípio V).
-- [ ] T034 Rodar `npm run lint` e `npm run build` limpos.
-- [ ] T035 Executar a verificação de segurança de `quickstart.md` (query a
+- [X] T034 Rodar `npm run lint` e `npm run build` limpos.
+- [X] T035 Executar a verificação de segurança de `quickstart.md` (query a
       `information_schema.routine_privileges` confirmando que nenhuma função `cacheta_*`
       ficou executável por `anon`).
-- [ ] T036 [P] Storybook para os componentes apresentacionais de `components/cacheta/`
+- [X] T036 [P] Storybook para os componentes apresentacionais de `components/cacheta/`
       (`table-board`, `hand-fan`, `turn-timer`, `move-log`) — excluindo qualquer componente
       que importe `baterCombinacao`/Server Action diretamente, mesma exclusão já aplicada ao
       resto do projeto (Vite/Storybook não roda o compilador RSC que faz `"use server"`

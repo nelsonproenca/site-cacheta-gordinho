@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { baterCombinacao } from "@/lib/actions/cacheta";
+import { baterCombinacao, cancelPaidTable } from "@/lib/actions/cacheta";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card as UiCard } from "@/components/ui/card";
@@ -41,6 +41,8 @@ type TableRow = {
   turn_seat_id: string | null;
   turn_deadline_at: string | null;
   winner_seat_id: string | null;
+  entry_amount: number;
+  created_by: string;
 };
 
 type SeatRow = {
@@ -273,6 +275,27 @@ export function TableBoard({ tableId, myPlayerId }: { tableId: string; myPlayerI
         </div>
         <TurnTimer deadline={table.turn_deadline_at} isMyTurn={isMyTurn} onExpire={handleExpire} />
       </div>
+
+      {table.entry_amount > 0 && (
+        <div className="flex items-center justify-between gap-2 text-sm">
+          <span>
+            Entrada: <strong>{table.entry_amount} moedas</strong> · Pote:{" "}
+            <strong>{table.entry_amount * seats.filter((s) => s.player_id).length} moedas</strong>
+          </span>
+          {table.status === "waiting" && table.created_by === myPlayerId && (
+            <form
+              action={() => cancelPaidTable(tableId)}
+              onSubmit={(e) => {
+                if (!confirm("Cancelar esta mesa e estornar as entradas pagas?")) e.preventDefault();
+              }}
+            >
+              <button type="submit" className="btn btn-outline btn-sm">
+                Cancelar mesa
+              </button>
+            </form>
+          )}
+        </div>
+      )}
 
       <UiCard className="flex flex-col items-center gap-4 py-8">
         <div className="flex gap-8 items-center">

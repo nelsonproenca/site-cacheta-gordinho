@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { createOnlineTable, joinOnlineTable } from "@/lib/actions/cacheta";
+import { joinOnlineTable } from "@/lib/actions/cacheta";
 import { Button } from "@/components/ui/button";
 import { Card as UiCard } from "@/components/ui/card";
+import { CreateOnlineTableForm } from "@/components/cacheta/create-online-table-form";
 
 // Lobby do modo online (US2): criar uma mesa (createOnlineTable), listar as
 // próprias mesas online ainda abertas (não uma vitrine pública de mesas de
@@ -24,14 +25,24 @@ export default async function OnlineLobbyPage({
   const { data: myPlayerId } = await supabase.rpc("current_player_id");
   if (!myPlayerId) redirect("/jogar/entrar?next=/jogar/online");
 
+  const { data: isGuest } = await supabase.rpc("current_player_is_guest");
+  let balance: number | null = null;
+  if (!isGuest) {
+    const { data: movements } = await supabase.from("wallet_movements").select("amount").eq("player_id", myPlayerId);
+    balance = (movements ?? []).reduce((sum, m) => sum + m.amount, 0);
+  }
+
   const { data: mySeats } = await supabase
     .from("cacheta_table_seats")
-    .select("table_id, cacheta_tables(id, mode, status, max_seats)")
+    .select("table_id, cacheta_tables(id, mode, status, max_seats, entry_amount)")
     .eq("player_id", myPlayerId);
 
   const openTables = (mySeats ?? [])
     .map((s) => s.cacheta_tables)
-    .filter((t): t is { id: string; mode: string; status: string; max_seats: number } => !!t && t.mode === "online" && t.status !== "finished");
+    .filter(
+      (t): t is { id: string; mode: string; status: string; max_seats: number; entry_amount: number } =>
+        !!t && t.mode === "online" && t.status !== "finished" && t.status !== "cancelled",
+    );
 
   return (
     <main className="flex flex-1 flex-col gap-6 p-6 sm:p-8 max-w-xl mx-auto w-full">
@@ -45,11 +56,7 @@ export default async function OnlineLobbyPage({
 
       <UiCard className="flex flex-col gap-3">
         <h2 className="font-display text-lg font-bold uppercase">Criar mesa</h2>
-        <form action={createOnlineTable}>
-          <Button type="submit" variant="yellow">
-            Criar nova mesa online
-          </Button>
-        </form>
+        <CreateOnlineTableForm allowPaid={!isGuest} balance={balance} />
       </UiCard>
 
       <UiCard className="flex flex-col gap-3">
@@ -68,7 +75,9 @@ export default async function OnlineLobbyPage({
           <ul className="flex flex-col gap-2">
             {openTables.map((t) => (
               <li key={t.id} className="flex items-center justify-between gap-2">
-                <span className="mono-data text-sm">{t.id}</span>
+                <span className="mono-data text-sm">
+                  {t.id} {t.entry_amount > 0 && <span className="text-ink-dim">— {t.entry_amount} moedas</span>}
+                </span>
                 <Link href={`/jogar/${t.id}`} className="btn btn-outline btn-sm">
                   {t.status === "waiting" ? "Ver sala de espera" : "Continuar"}
                 </Link>

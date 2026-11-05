@@ -1,6 +1,20 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Users, Plus, List, Shield, Inbox, Gamepad2, Play, Target, UserRound, Trophy, LogOut } from "lucide-react";
+import {
+  Users,
+  Plus,
+  List,
+  Shield,
+  Inbox,
+  Gamepad2,
+  Play,
+  Target,
+  UserRound,
+  Trophy,
+  LogOut,
+  Wallet,
+  Settings,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/lib/actions/auth";
 import { NavGroup } from "@/components/ui/nav-group";
@@ -17,6 +31,11 @@ export default async function AdminShellLayout({ children }: { children: React.R
 
   const { count: pendingCount } = await supabase
     .from("admins")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "pending");
+
+  const { count: pendingPurchaseCount } = await supabase
+    .from("coin_purchase_orders")
     .select("id", { count: "exact", head: true })
     .eq("status", "pending");
 
@@ -66,6 +85,21 @@ export default async function AdminShellLayout({ children }: { children: React.R
           </Link>
           <Link className="nav-item" href="/admin/cachetao/jogar">
             <Play size={16} aria-hidden="true" /> Jogar
+          </Link>
+        </NavGroup>
+        <NavGroup
+          label="Moedas"
+          icon={<Wallet size={15} />}
+          matchPrefixes={["/admin/pagamentos", "/admin/configuracoes"]}
+        >
+          <Link className="nav-item justify-between" href="/admin/pagamentos">
+            <span className="flex items-center gap-2">
+              <Inbox size={16} aria-hidden="true" /> Pagamentos
+            </span>
+            {!!pendingPurchaseCount && <span className="badge badge-red">{pendingPurchaseCount}</span>}
+          </Link>
+          <Link className="nav-item" href="/admin/configuracoes">
+            <Settings size={16} aria-hidden="true" /> Configurações
           </Link>
         </NavGroup>
         <div className="nav-group mt-auto px-3">

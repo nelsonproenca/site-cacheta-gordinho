@@ -48,6 +48,7 @@ export async function verifyPlayerOtp(
   const handle = normalizeHandle(String(formData.get("tiktok_handle") ?? ""));
   const displayName = String(formData.get("display_name") ?? "").trim();
   const next = String(formData.get("next") ?? "") || "/ao-vivo";
+  const referralCode = String(formData.get("ref") ?? "").trim() || null;
 
   if (!token) return { error: "Informe o código recebido por SMS.", phone };
 
@@ -55,15 +56,44 @@ export async function verifyPlayerOtp(
   const { error: verifyError } = await supabase.auth.verifyOtp({ phone, token, type: "sms" });
   if (verifyError) return { error: verifyError.message, phone };
 
-  // Repeat login (handle/displayName are ignored by the RPC once a players
-  // row is already linked to this auth.uid()) sends these fields too — the
-  // form always collects them since there's no way to know in advance
-  // whether this is a first login until after verifyOtp succeeds.
+  // Repeat login (handle/displayName/referralCode are ignored by the RPC
+  // once a players row is already linked to this auth.uid()) sends these
+  // fields too — the form always collects them since there's no way to know
+  // in advance whether this is a first login until after verifyOtp succeeds.
   const { error: linkError } = await supabase.rpc("link_or_create_player", {
     p_tiktok_handle: handle,
     p_display_name: displayName,
+    p_referral_code: referralCode ?? undefined,
   });
   if (linkError) return { error: linkError.message, phone };
+
+  redirect(next);
+}
+
+// specs/002-moedas-pagamento-indicacao, US4 — última etapa do login via
+// Google: só roda depois que app/auth/callback/route.ts já trocou o código
+// pela sessão e confirmou que não há players row ainda. Nunca lê telefone;
+// link_or_create_player_by_email (20261105000055) resolve e-mail via
+// auth.jwt() no próprio banco.
+export async function linkPlayerByGoogle(
+  _prevState: PlayerAuthState,
+  formData: FormData,
+): Promise<PlayerAuthState> {
+  const handle = normalizeHandle(String(formData.get("tiktok_handle") ?? ""));
+  const displayName = String(formData.get("display_name") ?? "").trim();
+  const next = String(formData.get("next") ?? "") || "/jogar/treino";
+  const referralCode = String(formData.get("ref") ?? "").trim() || null;
+
+  if (!handle) return { error: "Escolha um nick." };
+  if (!displayName) return { error: "Informe seu nome." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("link_or_create_player_by_email", {
+    p_handle: handle,
+    p_display_name: displayName,
+    p_referral_code: referralCode ?? undefined,
+  });
+  if (error) return { error: error.message };
 
   redirect(next);
 }

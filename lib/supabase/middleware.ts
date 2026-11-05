@@ -65,23 +65,39 @@ export async function updateSession(request: NextRequest) {
   // Anonymous Auth, not phone OTP). "/ao-vivo" and "/minha-conta" are
   // untouched and still require the real OTP login.
   const isJogarRoute = request.nextUrl.pathname.startsWith("/jogar");
-  const isJogarEntrarRoute = request.nextUrl.pathname === "/jogar/entrar";
+  // /jogar/vincular-google (specs/002-moedas-pagamento-indicacao, US4) é
+  // alcançada logo após o callback do Google — a sessão já existe, mas
+  // ainda não há players row (é exatamente o que essa página resolve), então
+  // precisa do mesmo tipo de exclusão que /jogar/entrar já tem, ou o gate
+  // abaixo redirecionaria de volta para /jogar/entrar num loop sem saída.
+  const isJogarEntrarRoute =
+    request.nextUrl.pathname === "/jogar/entrar" || request.nextUrl.pathname === "/jogar/vincular-google";
+  // /carteira e /indicacao (specs/002-moedas-pagamento-indicacao) tocam
+  // dinheiro — além de exigir um players row (como as demais rotas
+  // protegidas), exigem especificamente que não seja um convidado
+  // (is_guest), já que um convidado via /jogar/entrar também tem um
+  // players row e passaria pelo gate "hasPlayer" sozinho.
+  const isIdentifiedOnlyRoute =
+    request.nextUrl.pathname.startsWith("/carteira") || request.nextUrl.pathname.startsWith("/indicacao");
   const isPlayerProtectedRoute =
     request.nextUrl.pathname.startsWith("/ao-vivo") ||
     request.nextUrl.pathname.startsWith("/minha-conta") ||
+    isIdentifiedOnlyRoute ||
     (isJogarRoute && !isJogarEntrarRoute);
 
   if (isPlayerProtectedRoute) {
     let hasPlayer = false;
+    let isGuest = false;
     if (user) {
       const { data: player } = await supabase
         .from("players")
-        .select("id")
+        .select("id, is_guest")
         .eq("auth_user_id", user.id)
         .maybeSingle();
       hasPlayer = !!player;
+      isGuest = !!player?.is_guest;
     }
-    if (!hasPlayer) {
+    if (!hasPlayer || (isIdentifiedOnlyRoute && isGuest)) {
       const url = request.nextUrl.clone();
       url.pathname = isJogarRoute ? "/jogar/entrar" : "/entrar";
       url.search = `?next=${encodeURIComponent(request.nextUrl.pathname)}`;

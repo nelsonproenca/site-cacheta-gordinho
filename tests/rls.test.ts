@@ -575,3 +575,229 @@ describe("cacheta game", () => {
     });
   });
 });
+
+// specs/002-moedas-pagamento-indicacao — deferred to end-of-phase per
+// standing project convention (constitution Principle V). Covers: a player
+// never reads another player's wallet/purchase rows; a guest (is_guest) is
+// blocked from every money-touching table/RPC even though it has a real
+// players row and session; a non-super-admin can't write coin_packages/
+// platform_settings; a non-approved admin can't review a purchase order;
+// the payment-receipts storage bucket is isolated per player.
+describe("wallet and payments", () => {
+  type WalletPlayer = { authUserId: string; playerId: string; client: SupabaseClient<Database> };
+  const walletSuffix = `wallet_${suffix}`;
+
+  let playerA: WalletPlayer;
+  let playerB: WalletPlayer;
+  let guest: { authUserId: string; playerId: string; client: SupabaseClient<Database> };
+  let pendingAdmin: TestUser;
+  let packageId: string;
+  let orderId: string;
+
+  async function createWalletPlayer(label: string): Promise<WalletPlayer> {
+    const email = `rlstest-${walletSuffix}-${label}@example.com`;
+    const { data: created, error: createErr } = await service.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { actor_type: "player" },
+    });
+    if (createErr || !created.user) throw new Error(`create wallet player ${label} failed: ${createErr?.message}`);
+
+    const { data: player, error: playerErr } = await service
+      .from("players")
+      .insert({ auth_user_id: created.user.id, tiktok_handle: `${walletSuffix}_${label}`, display_name: `Wallet Test ${label}`, is_guest: false })
+      .select("id")
+      .single();
+    if (playerErr || !player) throw new Error(`players insert for ${label} failed: ${playerErr?.message}`);
+
+    const client = createClient<Database>(url, anonKey, { auth: { autoRefreshToken: false, persistSession: false } });
+    const { error: signInErr } = await client.auth.signInWithPassword({ email, password });
+    if (signInErr) throw new Error(`signIn wallet player ${label} failed: ${signInErr.message}`);
+
+    return { authUserId: created.user.id, playerId: player.id as string, client };
+  }
+
+  beforeAll(async () => {
+    playerA = await createWalletPlayer("a");
+    playerB = await createWalletPlayer("b");
+
+    const guestClient = createClient<Database>(url, anonKey, { auth: { autoRefreshToken: false, persistSession: false } });
+    const { data: guestSession } = await guestClient.auth.signInAnonymously();
+    const { data: guestPlayerId } = await guestClient.rpc("link_or_create_guest_player", { p_display_name: "Wallet Test Guest" });
+    guest = { authUserId: guestSession.session!.user.id, playerId: guestPlayerId as string, client: guestClient };
+
+    pendingAdmin = await createSignedInUser(`${walletSuffix}_pending`);
+    // Undo createSignedInUser's auto-approve — this suite specifically needs
+    // a non-approved admin to test review_coin_purchase's gate.
+    await service.from("admins").update({ status: "pending" }).eq("id", pendingAdmin.id);
+
+    const { data: pkg } = await service
+      .from("coin_packages")
+      .insert({ name: `RLS Test Pkg ${walletSuffix}`, price_brl: 9.9, coin_amount: 100 })
+      .select("id")
+      .single();
+    packageId = pkg!.id as string;
+
+    await service.rpc("wallet_credit", { p_player_id: playerA.playerId, p_amount: 500, p_reason: "coin_purchase" });
+
+    const { data: order } = await playerA.client.rpc("request_coin_purchase", {
+      p_package_id: packageId,
+      p_receipt_path: `${playerA.playerId}/rls-test-receipt.txt`,
+    });
+    orderId = order as string;
+  });
+
+  afterAll(async () => {
+    if (orderId) await service.from("coin_purchase_orders").delete().eq("id", orderId);
+    if (packageId) await service.from("coin_packages").delete().eq("id", packageId);
+    for (const p of [playerA, playerB]) {
+      await service.from("wallet_movements").delete().eq("player_id", p.playerId);
+      await service.from("wallet_accounts").delete().eq("player_id", p.playerId);
+      await service.from("players").delete().eq("id", p.playerId);
+      await service.auth.admin.deleteUser(p.authUserId);
+    }
+    if (guest?.playerId) {
+      await service.from("players").delete().eq("id", guest.playerId);
+      await service.auth.admin.deleteUser(guest.authUserId);
+    }
+    if (pendingAdmin?.id) {
+      await service.from("admins").delete().eq("id", pendingAdmin.id);
+      await service.auth.admin.deleteUser(pendingAdmin.id);
+    }
+  });
+
+  describe("wallet_movements", () => {
+    it("a player cannot read another player's movements", async () => {
+      const { data } = await playerB.client.from("wallet_movements").select("id").eq("player_id", playerA.playerId);
+      expect(data).toEqual([]);
+    });
+
+    it("a player can read their own movements", async () => {
+      const { data } = await playerA.client.from("wallet_movements").select("id").eq("player_id", playerA.playerId);
+      expect((data ?? []).length).toBeGreaterThan(0);
+    });
+
+    it("no one can insert a movement directly (bypassing wallet_credit/wallet_debit)", async () => {
+      const { error } = await playerA.client.from("wallet_movements").insert({
+        player_id: playerA.playerId,
+        amount: 1000000,
+        reason: "coin_purchase",
+      } as never);
+      expect(error).not.toBeNull();
+    });
+  });
+
+  describe("guest blocked from every money surface", () => {
+    it("cannot read platform_settings", async () => {
+      const { data } = await guest.client.from("platform_settings").select("*").maybeSingle();
+      expect(data).toBeNull();
+    });
+
+    it("cannot read coin_packages", async () => {
+      const { data } = await guest.client.from("coin_packages").select("*");
+      expect(data).toEqual([]);
+    });
+
+    it("cannot call request_coin_purchase", async () => {
+      const { error } = await guest.client.rpc("request_coin_purchase", {
+        p_package_id: packageId,
+        p_receipt_path: `${guest.playerId}/x.txt`,
+      });
+      expect(error).not.toBeNull();
+    });
+
+    it("cannot call set_referral_code", async () => {
+      const { error } = await guest.client.rpc("set_referral_code", { p_code: `GUEST${suffix}` });
+      expect(error).not.toBeNull();
+    });
+
+    it("cannot create a paid cacheta table", async () => {
+      const { error } = await guest.client.rpc("create_cacheta_table", { p_mode: "online", p_max_seats: 2, p_entry_amount: 10 });
+      expect(error).not.toBeNull();
+    });
+
+    it("current_player_is_guest() is true, current_player_is_identified() is false", async () => {
+      const { data: isGuest } = await guest.client.rpc("current_player_is_guest");
+      const { data: isIdentified } = await guest.client.rpc("current_player_is_identified");
+      expect(isGuest).toBe(true);
+      expect(isIdentified).toBe(false);
+    });
+  });
+
+  describe("coin_packages / platform_settings — super-admin-only writes", () => {
+    it("a regular approved admin cannot write coin_packages", async () => {
+      const admin = await createSignedInUser(`${walletSuffix}_regular`);
+      const { error } = await admin.client.from("coin_packages").update({ active: false }).eq("id", packageId);
+      // RLS silently filters to zero affected rows rather than erroring —
+      // confirm no row was actually touched instead of asserting on `error`.
+      const { data: stillActive } = await service.from("coin_packages").select("active").eq("id", packageId).single();
+      expect(error).toBeNull();
+      expect(stillActive?.active).toBe(true);
+      await service.from("admins").delete().eq("id", admin.id);
+      await service.auth.admin.deleteUser(admin.id);
+    });
+
+    it("anon cannot write platform_settings", async () => {
+      const { error } = await anon.from("platform_settings").update({ house_rake_percent: 99 }).eq("id", true);
+      const { data: unchanged } = await service.from("platform_settings").select("house_rake_percent").eq("id", true).single();
+      expect(unchanged?.house_rake_percent).not.toBe(99);
+      expect(error).toBeNull(); // same "silently filters" RLS shape as above
+    });
+  });
+
+  describe("coin_purchase_orders", () => {
+    it("a player cannot read another player's order", async () => {
+      const { data } = await playerB.client.from("coin_purchase_orders").select("id").eq("id", orderId);
+      expect(data).toEqual([]);
+    });
+
+    it("a non-approved admin cannot review a purchase order", async () => {
+      const { error } = await pendingAdmin.client.rpc("review_coin_purchase", { p_order_id: orderId, p_approve: true });
+      expect(error).not.toBeNull();
+    });
+
+    it("the order is still pending after the denied review attempt", async () => {
+      const { data } = await service.from("coin_purchase_orders").select("status").eq("id", orderId).single();
+      expect(data?.status).toBe("pending");
+    });
+  });
+
+  describe("payment-receipts storage", () => {
+    it("a player cannot read another player's receipt path", async () => {
+      const path = `${playerA.playerId}/isolation-test.txt`;
+      await service.storage.from("payment-receipts").upload(path, new Blob(["test"]), { contentType: "text/plain" });
+      const { data, error } = await playerB.client.storage.from("payment-receipts").download(path);
+      expect(data).toBeNull();
+      expect(error).not.toBeNull();
+      await service.storage.from("payment-receipts").remove([path]);
+    });
+
+    it("a player cannot upload into another player's folder", async () => {
+      const path = `${playerB.playerId}/hijack-attempt.txt`;
+      const { error } = await playerA.client.storage.from("payment-receipts").upload(path, new Blob(["test"]), { contentType: "text/plain" });
+      expect(error).not.toBeNull();
+    });
+  });
+
+  describe("referral_links", () => {
+    it("an uninvolved player cannot read someone else's referral link", async () => {
+      await service.rpc("referral_resolve_and_link", { p_new_player_id: playerB.playerId, p_referral_code: "NON-EXISTENT-CODE" });
+      // No link exists yet (invalid code) — set one up via a real code owned by A.
+      await playerA.client.rpc("set_referral_code", { p_code: `RLSREF${suffix}` });
+      await service.rpc("referral_resolve_and_link", { p_new_player_id: playerB.playerId, p_referral_code: `RLSREF${suffix}` });
+
+      const outsider = await createWalletPlayer("outsider");
+      const { data } = await outsider.client
+        .from("referral_links")
+        .select("referred_player_id")
+        .eq("referred_player_id", playerB.playerId);
+      expect(data).toEqual([]);
+
+      await service.from("referral_links").delete().eq("referred_player_id", playerB.playerId);
+      await service.from("referral_codes").delete().eq("player_id", playerA.playerId);
+      await service.from("players").delete().eq("id", outsider.playerId);
+      await service.auth.admin.deleteUser(outsider.authUserId);
+    });
+  });
+});

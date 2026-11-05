@@ -5,7 +5,7 @@ import { requestPlayerOtp, verifyPlayerOtp, type PlayerAuthState } from "@/lib/a
 import { Field, Input, PhoneInput } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 
-export function PlayerLoginForm({ next }: { next: string }) {
+export function PlayerLoginForm({ next, referralCode }: { next: string; referralCode: string | null }) {
   // Step is derived from requestState instead of synced via a useEffect:
   // useActionState already keeps the last action result around across
   // renders, so "did the OTP request succeed" has a single source of truth.
@@ -46,6 +46,7 @@ export function PlayerLoginForm({ next }: { next: string }) {
     <form action={verifyAction} className="flex w-full max-w-sm flex-col gap-5">
       <input type="hidden" name="phone" value={phone} />
       <input type="hidden" name="next" value={next} />
+      {referralCode && <input type="hidden" name="ref" value={referralCode} />}
       <p className="text-ink-dim text-sm">Enviamos um código por SMS para {phone}.</p>
       <Field label="Código" htmlFor="token">
         <Input id="token" name="token" type="text" inputMode="numeric" required placeholder="123456" />

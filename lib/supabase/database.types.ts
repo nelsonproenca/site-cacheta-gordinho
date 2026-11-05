@@ -313,6 +313,7 @@ export type Database = {
           created_at: string
           created_by: string
           discard_pile: Json
+          entry_amount: number
           id: string
           max_seats: number
           mode: string
@@ -328,6 +329,7 @@ export type Database = {
           created_at?: string
           created_by: string
           discard_pile?: Json
+          entry_amount?: number
           id?: string
           max_seats: number
           mode: string
@@ -343,6 +345,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           discard_pile?: Json
+          entry_amount?: number
           id?: string
           max_seats?: number
           mode?: string
@@ -475,6 +478,100 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coin_packages: {
+        Row: {
+          active: boolean
+          coin_amount: number
+          created_at: string
+          id: string
+          name: string
+          price_brl: number
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          coin_amount: number
+          created_at?: string
+          id?: string
+          name: string
+          price_brl: number
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          coin_amount?: number
+          created_at?: string
+          id?: string
+          name?: string
+          price_brl?: number
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      coin_purchase_orders: {
+        Row: {
+          coin_amount: number
+          created_at: string
+          id: string
+          package_id: string
+          player_id: string
+          price_brl: number
+          receipt_path: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          coin_amount: number
+          created_at?: string
+          id?: string
+          package_id: string
+          player_id: string
+          price_brl: number
+          receipt_path: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          coin_amount?: number
+          created_at?: string
+          id?: string
+          package_id?: string
+          player_id?: string
+          price_brl?: number
+          receipt_path?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coin_purchase_orders_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "coin_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coin_purchase_orders_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coin_purchase_orders_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "admins"
             referencedColumns: ["id"]
           },
         ]
@@ -1163,6 +1260,33 @@ export type Database = {
           },
         ]
       }
+      platform_settings: {
+        Row: {
+          house_rake_percent: number
+          id: boolean
+          pix_key: string | null
+          pix_key_owner_name: string | null
+          referral_commission_percent: number
+          updated_at: string
+        }
+        Insert: {
+          house_rake_percent?: number
+          id?: boolean
+          pix_key?: string | null
+          pix_key_owner_name?: string | null
+          referral_commission_percent?: number
+          updated_at?: string
+        }
+        Update: {
+          house_rake_percent?: number
+          id?: boolean
+          pix_key?: string | null
+          pix_key_owner_name?: string | null
+          referral_commission_percent?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       players: {
         Row: {
           auth_phone: string | null
@@ -1170,6 +1294,7 @@ export type Database = {
           created_at: string
           display_name: string
           id: string
+          is_guest: boolean
           tiktok_handle: string
           verified_via_tiktok: boolean
           whatsapp: string | null
@@ -1180,6 +1305,7 @@ export type Database = {
           created_at?: string
           display_name: string
           id?: string
+          is_guest?: boolean
           tiktok_handle: string
           verified_via_tiktok?: boolean
           whatsapp?: string | null
@@ -1190,11 +1316,71 @@ export type Database = {
           created_at?: string
           display_name?: string
           id?: string
+          is_guest?: boolean
           tiktok_handle?: string
           verified_via_tiktok?: boolean
           whatsapp?: string | null
         }
         Relationships: []
+      }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string
+          player_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          player_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_codes_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_links: {
+        Row: {
+          created_at: string
+          referred_player_id: string
+          referrer_player_id: string
+        }
+        Insert: {
+          created_at?: string
+          referred_player_id: string
+          referrer_player_id: string
+        }
+        Update: {
+          created_at?: string
+          referred_player_id?: string
+          referrer_player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_links_referred_player_id_fkey"
+            columns: ["referred_player_id"]
+            isOneToOne: true
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_links_referrer_player_id_fkey"
+            columns: ["referrer_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       score_periods: {
         Row: {
@@ -1288,6 +1474,81 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_accounts: {
+        Row: {
+          created_at: string
+          player_id: string
+        }
+        Insert: {
+          created_at?: string
+          player_id: string
+        }
+        Update: {
+          created_at?: string
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_accounts_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallet_movements: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          player_id: string | null
+          reason: string
+          reference_purchase_id: string | null
+          reference_table_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          player_id?: string | null
+          reason: string
+          reference_purchase_id?: string | null
+          reference_table_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          player_id?: string | null
+          reason?: string
+          reference_purchase_id?: string | null
+          reference_table_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_movements_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_movements_reference_purchase_id_fkey"
+            columns: ["reference_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "coin_purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_movements_reference_table_id_fkey"
+            columns: ["reference_table_id"]
+            isOneToOne: false
+            referencedRelation: "cacheta_tables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1305,8 +1566,9 @@ export type Database = {
         Args: { p_table_id: string }
         Returns: undefined
       }
+      cancel_cacheta_table: { Args: { p_table_id: string }; Returns: undefined }
       create_cacheta_table: {
-        Args: { p_max_seats: number; p_mode: string }
+        Args: { p_entry_amount?: number; p_max_seats: number; p_mode: string }
         Returns: string
       }
       create_tiktok_account: {
@@ -1331,6 +1593,8 @@ export type Database = {
         }
       }
       current_player_id: { Args: never; Returns: string }
+      current_player_is_guest: { Args: never; Returns: boolean }
+      current_player_is_identified: { Args: never; Returns: boolean }
       delete_tiktok_account: {
         Args: { p_account_id: string; p_handle_confirmation: string }
         Returns: undefined
@@ -1364,6 +1628,7 @@ export type Database = {
         Returns: boolean
       }
       is_approved_admin: { Args: never; Returns: boolean }
+      is_handle_available: { Args: { p_handle: string }; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
       join_cacheta_table: { Args: { p_table_id: string }; Returns: string }
       link_or_create_guest_player: {
@@ -1371,7 +1636,19 @@ export type Database = {
         Returns: string
       }
       link_or_create_player: {
-        Args: { p_display_name: string; p_tiktok_handle: string }
+        Args: {
+          p_display_name: string
+          p_referral_code?: string
+          p_tiktok_handle: string
+        }
+        Returns: string
+      }
+      link_or_create_player_by_email: {
+        Args: {
+          p_display_name: string
+          p_handle: string
+          p_referral_code?: string
+        }
         Returns: string
       }
       list_live_broadcasts_now: {
@@ -1383,6 +1660,22 @@ export type Database = {
           tiktok_account_id: string
           title: string
         }[]
+      }
+      referral_resolve_and_link: {
+        Args: { p_new_player_id: string; p_referral_code: string }
+        Returns: undefined
+      }
+      request_coin_purchase: {
+        Args: { p_package_id: string; p_receipt_path: string }
+        Returns: string
+      }
+      review_coin_purchase: {
+        Args: {
+          p_approve: boolean
+          p_order_id: string
+          p_rejection_reason?: string
+        }
+        Returns: undefined
       }
       send_live_chat_message: {
         Args: { p_body: string; p_broadcast_id: string }
@@ -1401,7 +1694,27 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      set_referral_code: { Args: { p_code: string }; Returns: undefined }
       start_cacheta_game: { Args: { p_table_id: string }; Returns: undefined }
+      wallet_credit: {
+        Args: {
+          p_amount: number
+          p_player_id: string
+          p_reason: string
+          p_reference_purchase_id?: string
+          p_reference_table_id?: string
+        }
+        Returns: undefined
+      }
+      wallet_debit: {
+        Args: {
+          p_amount: number
+          p_player_id: string
+          p_reason: string
+          p_reference_table_id?: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

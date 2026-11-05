@@ -6,9 +6,9 @@ import { GuestLoginForm } from "./guest-login-form";
 export default async function JogarEntrarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; ref?: string }>;
 }) {
-  const { next } = await searchParams;
+  const { next, ref } = await searchParams;
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-8 p-8">
@@ -17,7 +17,10 @@ export default async function JogarEntrarPage({
         <h1 className="font-display text-3xl italic font-extrabold uppercase">Jogar Cacheta</h1>
         <p className="text-ink-dim text-sm mt-1">Sem cadastro — só o nome que vai aparecer na mesa.</p>
       </div>
-      <GuestLoginForm next={next && next.startsWith("/jogar") ? next : "/jogar/treino"} />
+      <GuestLoginForm
+        next={next && next.startsWith("/jogar") ? next : "/jogar/treino"}
+        referralCode={ref ?? null}
+      />
     </main>
   );
 }

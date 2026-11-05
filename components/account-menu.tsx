@@ -39,6 +39,16 @@ export function AccountMenu({ isAdmin }: { isAdmin: boolean }) {
           >
             {isAdmin ? "Painel admin" : "Minha conta"}
           </Link>
+          {!isAdmin && (
+            <>
+              <Link href="/carteira" className="nav-item" onClick={() => setOpen(false)}>
+                Carteira
+              </Link>
+              <Link href="/indicacao" className="nav-item" onClick={() => setOpen(false)}>
+                Indicação
+              </Link>
+            </>
+          )}
           <form action={signOutToHome}>
             <button type="submit" className="nav-item w-full text-left">
               Sair

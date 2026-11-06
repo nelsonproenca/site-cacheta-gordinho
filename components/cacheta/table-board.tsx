@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { baterCombinacao, cancelPaidTable } from "@/lib/actions/cacheta";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card as UiCard } from "@/components/ui/card";
 import { HandFan } from "./hand-fan";
 import { TurnTimer } from "./turn-timer";
@@ -248,39 +247,15 @@ export function TableBoard({ tableId, myPlayerId }: { tableId: string; myPlayerI
   const canDraw = mySeat && isMyTurn && myHand.length === 9 && table.status === "playing";
   const canDiscard = mySeat && isMyTurn && myHand.length === 10 && selectedCards.length === 1;
   const canBater = mySeat && isMyTurn && selectedCards.length === 9;
-  const turnLabel = table.turn_seat_id ? seatLabel(table.turn_seat_id) : null;
+  const otherSeats = seats.filter((s) => s.id !== mySeat?.id);
+  const pot = table.entry_amount * seats.filter((s) => s.player_id).length;
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-col gap-1">
-          <div className="flex gap-2 flex-wrap">
-            {seats.map((s) => (
-              <Badge
-                key={s.id}
-                variant={s.id === table.turn_seat_id ? "yellow" : "neutral"}
-                className={s.id === table.turn_seat_id ? "animate-pulse" : ""}
-              >
-                {s.id === table.turn_seat_id && "▶ "}
-                {seatLabel(s.id)} ({s.hand_count}) {s.status === "batido" && "🏆"}
-                {s.status === "eliminated" && "✕"}
-              </Badge>
-            ))}
-          </div>
-          {turnLabel && (
-            <p className="text-ink-dim text-xs">
-              Vez de: <span className="text-ink font-bold">{isMyTurn ? "você" : turnLabel}</span>
-            </p>
-          )}
-        </div>
-        <TurnTimer deadline={table.turn_deadline_at} isMyTurn={isMyTurn} onExpire={handleExpire} />
-      </div>
-
       {table.entry_amount > 0 && (
         <div className="flex items-center justify-between gap-2 text-sm">
           <span>
-            Entrada: <strong>{table.entry_amount} moedas</strong> · Pote:{" "}
-            <strong>{table.entry_amount * seats.filter((s) => s.player_id).length} moedas</strong>
+            Entrada: <strong>{table.entry_amount} moedas</strong> · Pote: <strong>{pot} moedas</strong>
           </span>
           {table.status === "waiting" && table.created_by === myPlayerId && (
             <form
@@ -297,43 +272,78 @@ export function TableBoard({ tableId, myPlayerId }: { tableId: string; myPlayerI
         </div>
       )}
 
-      <UiCard className="flex flex-col items-center gap-4 py-8">
-        <div className="flex gap-8 items-center">
+      {/* Mesa oval — avatares dos adversários no arco superior, monte/vira/
+          coringa/descarte no centro, "você" na base. Paleta mantém o tema
+          vermelho/preto já usado no site (não a marca azul-neon de
+          docs/tela0.jpeg, que serviu só de referência de layout/estrutura). */}
+      <div
+        className="relative overflow-hidden rounded-[999px/120px] border border-stroke px-4 py-10 sm:px-10"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, rgba(210,0,28,0.16) 0%, var(--surface-2) 55%, var(--surface) 100%)",
+        }}
+      >
+        <div className="absolute top-3 right-3 z-10">
+          <TurnTimer deadline={table.turn_deadline_at} isMyTurn={isMyTurn} onExpire={handleExpire} />
+        </div>
+
+        <div className="flex flex-wrap items-start justify-center gap-6 sm:gap-10 pb-10">
+          {otherSeats.map((s) => (
+            <SeatAvatar key={s.id} seat={s} label={seatLabel(s.id)} isTurn={s.id === table.turn_seat_id} />
+          ))}
+        </div>
+
+        <div className="flex items-center justify-center gap-6 sm:gap-10">
           <div className="flex flex-col items-center gap-1">
-            <button type="button" disabled={!canDraw || busy} onClick={() => handleDraw("monte")} className="btn btn-dark btn-sm">
-              Comprar ({table.monte_count})
+            <button
+              type="button"
+              disabled={!canDraw || busy}
+              onClick={() => handleDraw("monte")}
+              className="flex h-16 w-11 items-center justify-center rounded-[var(--radius-md)] border border-stroke bg-[var(--surface)] text-xs font-bold text-ink-dim disabled:opacity-50"
+            >
+              {table.monte_count}
             </button>
-            <span className="text-ink-dim text-xs">Monte</span>
+            <span className="text-ink-dim text-[10px] uppercase tracking-wide">Monte</span>
           </div>
+
           {table.vira && (
             <div className="flex flex-col items-center gap-1">
-              <span className="text-2xl font-bold">
-                {RANK_LABEL[table.vira.rank]}
-                {SUIT_LABEL[table.vira.suit]}
-              </span>
-              <span className="text-ink-dim text-xs">Vira</span>
+              <div className="flex h-16 w-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--yellow)] bg-[var(--surface)] text-lg font-bold">
+                <span className={table.vira.suit === "copas" || table.vira.suit === "ouros" ? "text-red" : "text-ink"}>
+                  {RANK_LABEL[table.vira.rank]}
+                  {SUIT_LABEL[table.vira.suit]}
+                </span>
+              </div>
+              <span className="text-ink-dim text-[10px] uppercase tracking-wide">Vira</span>
             </div>
           )}
+
           <div className="flex flex-col items-center gap-1">
             <button
               type="button"
               disabled={!canDraw || !discardTop || busy}
               onClick={() => handleDraw("discard")}
-              className="btn btn-outline btn-sm"
+              className="flex h-16 w-11 items-center justify-center rounded-[var(--radius-md)] border border-stroke bg-[var(--surface)] text-lg font-bold disabled:opacity-50"
             >
               {discardTop ? (
-                <>
+                <span className={discardTop.suit === "copas" || discardTop.suit === "ouros" ? "text-red" : "text-ink"}>
                   {RANK_LABEL[discardTop.rank]}
                   {SUIT_LABEL[discardTop.suit]}
-                </>
+                </span>
               ) : (
-                "—"
+                <span className="text-ink-dim">—</span>
               )}
             </button>
-            <span className="text-ink-dim text-xs">Descarte</span>
+            <span className="text-ink-dim text-[10px] uppercase tracking-wide">Descarte</span>
           </div>
         </div>
-      </UiCard>
+
+        {mySeat && (
+          <div className="mt-10 flex justify-center">
+            <SeatAvatar seat={mySeat} label="Você" isTurn={mySeat.id === table.turn_seat_id} highlight />
+          </div>
+        )}
+      </div>
 
       <HandFan cards={myHand} selectedIndices={selectedIndices} onToggle={toggleCard} coringa={table.coringa} />
 
@@ -349,6 +359,37 @@ export function TableBoard({ tableId, myPlayerId }: { tableId: string; myPlayerI
       {error && <p className="error-text text-center">{error}</p>}
 
       <MoveLog moves={moves} seatLabel={seatLabel} />
+    </div>
+  );
+}
+
+function SeatAvatar({
+  seat,
+  label,
+  isTurn,
+  highlight,
+}: {
+  seat: SeatRow;
+  label: string;
+  isTurn: boolean;
+  highlight?: boolean;
+}) {
+  const initial = label.trim().charAt(0).toUpperCase() || "?";
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <div
+        className={`flex items-center justify-center rounded-full border-2 font-display font-extrabold ${
+          highlight ? "h-16 w-16 text-xl" : "h-12 w-12 text-base"
+        } ${isTurn ? "border-[var(--yellow)] shadow-[0_0_0_4px_rgba(255,242,0,0.18)] animate-pulse" : "border-stroke"} ${
+          seat.status === "eliminated" ? "opacity-40 grayscale" : ""
+        } bg-[var(--surface)] text-ink`}
+      >
+        {initial}
+      </div>
+      <span className="text-[11px] font-semibold text-ink max-w-[80px] truncate">{label}</span>
+      <span className="text-[10px] text-ink-dim">
+        {seat.status === "eliminated" ? "Eliminado" : seat.status === "batido" ? "🏆 Bateu" : `${seat.hand_count} cartas`}
+      </span>
     </div>
   );
 }

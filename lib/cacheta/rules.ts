@@ -3,23 +3,20 @@
 // and calls validarBatida with it; this module is deliberately independent
 // and unit-tested on its own (rules.test.ts), per research.md §3.
 //
-// Interpretation of the rules as given ("batida normal = 3 trincas", "quadra
-// = sequência de 4 OU trinca com uma dobra", "quina = sequência de 5 OU
-// trinca com duas dobras") is that a winning hand of 9 cards partitions
-// fully into groups of size 3 ("trinca"), 4 ("quadra") or 5 ("quina"), each
-// either a run (same suit, consecutive ranks) or a set (same rank). The only
-// ways to partition 9 cards into groups sized {3,4,5} are 3+3+3 ("batida
-// normal") or 4+5 ("quadra" + "quina") — this is what drives the search
-// below. This specific partition rule is an implementation decision, not a
-// requirement quoted verbatim from the user — the "modo de 7 pontos" variant
-// is explicitly out of scope here (spec FR-011, deferred).
+// Aligned with the official rules (.claude/skills/regras-cacheta/SKILL.md):
+// to bater, a hand must split into EXACTLY 3 groups, each with >=3 cards, no
+// upper limit on group size — never a 2-group "quadra+quina" split (that was
+// this engine's own earlier, non-official interpretation; removed). For a
+// 9-card hand that's arithmetically only 3+3+3 ("batida normal", with a
+// discard); for a 10-card hand (all 9 dealt cards + the one just drawn,
+// "bater com 10"/"bater limpo", no discard) it's whatever 3-way split of 10
+// into parts >=3 each validates (e.g. 3+3+4) — see combinationType below for
+// how that distinction (not group size) drives scoring.
 
 import { type Card, cardsEqual, isCoringa } from "./cards";
 
-export type GroupKind = "trinca" | "quadra" | "quina";
-
 export type Grupo = {
-  kind: GroupKind;
+  size: number;
   cards: Card[];
 };
 
@@ -32,8 +29,6 @@ export type BatidaInvalida = {
   valid: false;
   reason: string;
 };
-
-const GROUP_KIND_BY_SIZE: Record<number, GroupKind> = { 3: "trinca", 4: "quadra", 5: "quina" };
 
 function combinations<T>(items: T[], size: number): T[][] {
   if (size === 0) return [[]];
@@ -80,46 +75,47 @@ function isValidGroup(cards: Card[], coringa: Card): boolean {
   return isValidSet(cards, coringa) || isValidRun(cards, coringa);
 }
 
-function tryGroupShape(hand: Card[], sizes: number[], coringa: Card): Grupo[] | null {
-  if (sizes.length === 1) {
-    return isValidGroup(hand, coringa) ? [{ kind: GROUP_KIND_BY_SIZE[hand.length], cards: hand }] : null;
+// Finds any split of `hand` into exactly `groupsLeft` non-overlapping valid
+// groups (each >=3 cards, no upper bound — official rule has none). Tries
+// group sizes from 3 up to whatever still leaves room for the remaining
+// groups (each needs >=3), so for 9 cards this only ever finds 3+3+3, and
+// for 10 cards only 3-way splits like 3+3+4/3+4+3/4+3+3.
+function findGroups(hand: Card[], groupsLeft: number, coringa: Card): Grupo[] | null {
+  if (groupsLeft === 1) {
+    return isValidGroup(hand, coringa) ? [{ size: hand.length, cards: hand }] : null;
   }
 
-  const [size, ...restSizes] = sizes;
-  for (const chosen of combinations(hand, size)) {
-    if (!isValidGroup(chosen, coringa)) continue;
-    const rest = complement(hand, chosen);
-    const restResult = tryGroupShape(rest, restSizes, coringa);
-    if (restResult) {
-      return [{ kind: GROUP_KIND_BY_SIZE[size], cards: chosen }, ...restResult];
+  const maxSize = hand.length - 3 * (groupsLeft - 1);
+  for (let size = 3; size <= maxSize; size++) {
+    for (const chosen of combinations(hand, size)) {
+      if (!isValidGroup(chosen, coringa)) continue;
+      const rest = complement(hand, chosen);
+      const restResult = findGroups(rest, groupsLeft - 1, coringa);
+      if (restResult) {
+        return [{ size, cards: chosen }, ...restResult];
+      }
     }
   }
   return null;
 }
 
 export function validarBatida(mao: Card[], coringa: Card): BatidaValida | BatidaInvalida {
-  if (mao.length !== 9) {
-    return { valid: false, reason: `A mão precisa ter 9 cartas para bater (tem ${mao.length}).` };
+  if (mao.length !== 9 && mao.length !== 10) {
+    return { valid: false, reason: `A mão precisa ter 9 ou 10 cartas para bater (tem ${mao.length}).` };
   }
 
-  const normalShape = tryGroupShape(mao, [3, 3, 3], coringa);
-  if (normalShape) return { valid: true, groups: normalShape };
-
-  const quadraQuinaShape = tryGroupShape(mao, [4, 5], coringa);
-  if (quadraQuinaShape) return { valid: true, groups: quadraQuinaShape };
+  const groups = findGroups(mao, 3, coringa);
+  if (groups) return { valid: true, groups };
 
   return {
     valid: false,
-    reason: "Nenhuma combinação válida encontrada (nem 3 trincas, nem quadra + quina).",
+    reason: "Nenhuma combinação válida encontrada (precisa de exatamente 3 grupos, cada um com 3 cartas ou mais).",
   };
 }
 
-// Highest-value grouping found — used to label the win for scoring/ranking
-// (cacheta_game_results.combination_type, see data-model.md). "Quina" beats
-// "quadra" beats "batida_normal" by the point scale implied in the PRD
-// (bigger/rarer groupings score more).
-export function combinationType(groups: Grupo[]): "batida_normal" | "quadra" | "quina" {
-  if (groups.some((g) => g.kind === "quina")) return "quina";
-  if (groups.some((g) => g.kind === "quadra")) return "quadra";
-  return "batida_normal";
+// "Batida normal" (9 cartas, com descarte) vs. "bater com 10"/"bater limpo"
+// (10 cartas, sem descartar) — a distinção oficial que vale pontos em dobro
+// para quem bateu, não o tamanho dos grupos formados (ver SKILL.md).
+export function combinationType(handSize: number): "batida_normal" | "bater_limpo" {
+  return handSize === 10 ? "bater_limpo" : "batida_normal";
 }

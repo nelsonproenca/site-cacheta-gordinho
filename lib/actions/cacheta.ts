@@ -106,8 +106,8 @@ export async function baterCombinacao(tableId: string, formData: FormData): Prom
   } catch {
     return { error: "Seleção de cartas inválida." };
   }
-  if (!Array.isArray(selected) || selected.length !== 9) {
-    return { error: "Selecione exatamente 9 cartas para bater." };
+  if (!Array.isArray(selected) || (selected.length !== 9 && selected.length !== 10)) {
+    return { error: "Selecione 9 cartas (com descarte) ou as 10 cartas da mão (bater limpo, sem descartar)." };
   }
 
   const remaining = [...hand];
@@ -117,7 +117,7 @@ export async function baterCombinacao(tableId: string, formData: FormData): Prom
     remaining.splice(idx, 1);
   }
   if (remaining.length > 1) {
-    return { error: "Sobraram cartas demais — selecione 9 cartas da sua mão de 9 ou 10." };
+    return { error: "Sobraram cartas demais — selecione 9 ou 10 cartas da sua mão." };
   }
 
   const coringa = table.coringa as unknown as Card;
@@ -140,10 +140,11 @@ export async function baterCombinacao(tableId: string, formData: FormData): Prom
 
   // Ranking do jogo (US3, cacheta_game_results) — separado por desenho de
   // match_results (ver data-model.md). Pontuação própria deste domínio,
-  // nunca derivada de scoring_rules: 1/2/3 pontos para batida normal/
-  // quadra/quina, refletindo a dificuldade crescente da combinação.
-  const combType = combinationType(result.groups);
-  const points = combType === "quina" ? 3 : combType === "quadra" ? 2 : 1;
+  // nunca derivada de scoring_rules: 1 ponto para batida normal, 2 para
+  // "bater com 10"/"bater limpo" — mesma proporção da regra oficial, em que
+  // bater limpo tira o dobro de pontos de vida dos adversários.
+  const combType = combinationType(selected.length);
+  const points = combType === "bater_limpo" ? 2 : 1;
   await service.from("cacheta_game_results").insert({
     table_id: tableId,
     winner_player_id: seat.player_id,

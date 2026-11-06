@@ -10,7 +10,14 @@ import { ClosingCountdown } from "@/components/closing-countdown";
 // streamer, land on their public ranking/Cachetão/cadastro pages, see
 // [accountHandle]/layout.tsx for that nav). Admin access ("Área Restrita")
 // lives in the global masthead (app/layout.tsx), not this page.
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ ref?: string }> }) {
+  const { ref } = await searchParams;
+  // specs/002-moedas-pagamento-indicacao — "/" nunca tinha nenhum CTA que
+  // repassasse um `?ref=CODIGO` recebido adiante (gap documentado); um link
+  // de indicação para a home agora sobrevive até a tela de login/cadastro
+  // do jogo, de onde link_or_create_player já lê `ref` corretamente.
+  const refSuffix = ref ? `?ref=${encodeURIComponent(ref)}` : "";
+
   const supabase = await createClient();
   const { data: accounts } = await supabase
     .from("tiktok_accounts")
@@ -183,13 +190,13 @@ export default async function Home() {
         </div>
         <div className="w-full max-w-3xl">
           <CardGrid>
-            <Link href="/jogar/treino">
+            <Link href={`/jogar/treino${refSuffix}`}>
               <Card>
                 <span className="font-display italic font-bold text-lg">🤖 Treinar</span>
                 <p className="text-ink-dim text-sm">Jogue sozinho contra robôs para aprender as regras.</p>
               </Card>
             </Link>
-            <Link href="/jogar/online">
+            <Link href={`/jogar/online${refSuffix}`}>
               <Card>
                 <span className="font-display italic font-bold text-lg">🎮 Jogar online</span>
                 <p className="text-ink-dim text-sm">Crie ou entre numa mesa online com outros jogadores.</p>

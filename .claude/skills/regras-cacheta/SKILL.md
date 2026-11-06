@@ -100,22 +100,31 @@ Pontos onde o jogo já construído neste repositório **diverge deliberadamente 
 acima — não assumir que um é "bug" do outro sem checar com o usuário primeiro, já que o motor de
 pontuação do jogo (ranking contínuo) é uma escolha de produto diferente do sistema de vidas oficial:
 
-1. **Baralho sem coringas impressos**: `lib/cacheta/cards.ts` → `buildDoubleDeck()` monta 2x52 = 104
-   cartas, **sem os 4 coringas tradicionais**. A regra oficial usa 108 cartas (104 + 4 coringas). Os 4
-   coringas impressos nunca existem neste jogo — só a carta-coringa determinada pela vira está ativa.
-2. **"Quadra"/"quina" como formas alternativas de bater, não como regra oficial**: `lib/cacheta/rules.ts`
-   trata uma mão de 9 cartas como podendo bater em **3+3+3** ("batida normal") **ou 4+5** ("quadra" +
-   "quina", dois grupos em vez de três). A regra oficial não tem essa segunda forma — exige sempre
-   **exatamente 3 combinações**; para 9 cartas, matematicamente só existe 3+3+3. "Quadra"/"quina" aqui
-   são termos próprios deste produto (usados para dar pontuação diferenciada no ranking, não para
-   replicar uma variante oficial chamada assim).
-3. **Sem "bater com 10 cartas" (bater limpo)**: `baterCombinacao` (`lib/actions/cacheta.ts`) sempre exige
-   exatamente 9 cartas selecionadas, mesmo quando a mão tem 10 — a 10ª carta fica implicitamente não
-   usada, nunca a variante oficial de usar as 10 sem descartar.
-4. **Sem sistema de vidas/pontos por rodada**: a pontuação aqui (`cacheta_game_results.points_awarded`,
-   1/2/3 por `batida_normal`/`quadra`/`quina`) alimenta um ranking cumulativo entre partidas, não o
-   sistema de 7 pontos/eliminação da regra oficial — cada partida tem só 1 vencedor (quem bate primeiro),
-   sem os demais perderem pontos de vida nem haver eliminação dentro da própria partida.
+1. **[Em aberto] Baralho sem coringas impressos**: `lib/cacheta/cards.ts` → `buildDoubleDeck()` monta
+   2x52 = 104 cartas, **sem os 4 coringas tradicionais**. A regra oficial usa 108 cartas (104 + 4
+   coringas). Os 4 coringas impressos nunca existem neste jogo — só a carta-coringa determinada pela
+   vira está ativa. **Não corrigido** (2026-11-06) — exige mudar o tipo `Card` (um coringa impresso não
+   tem naipe/valor natural), a exibição da mão, e a distribuição/embaralhamento de mesas pagas já em
+   produção com dinheiro real; adiado até confirmação explícita, dado o risco.
+2. **[Corrigido 2026-11-06] "Quadra"/"quina" como formas alternativas de bater**: `lib/cacheta/rules.ts`
+   tratava uma mão de 9 cartas como podendo bater em 3+3+3 **ou** 4+5 (dois grupos). Isso nunca foi regra
+   oficial — ela exige sempre **exatamente 3 combinações**, cada uma com 3+ cartas, sem limite máximo.
+   `validarBatida` agora busca qualquer partição em exatamente 3 grupos válidos (nunca 2); para 9 cartas
+   isso só encontra 3+3+3, como manda a regra oficial.
+3. **[Corrigido 2026-11-06] "Bater com 10 cartas" (bater limpo)**: `baterCombinacao` agora aceita 9 cartas
+   selecionadas (batida normal, com descarte) **ou** as 10 da mão (bater limpo, sem descartar) — antes só
+   aceitava 9. `combinationType` passou a rotular pelo tamanho da seleção (`batida_normal` vs.
+   `bater_limpo`), não mais pelo formato dos grupos — `cacheta_game_results.points_awarded` dá 2 pontos
+   para bater limpo (1 para batida normal), mesma proporção da regra oficial (adversários perdem o dobro
+   de pontos de vida). Migration `20261106000059` estendeu o check constraint de `combination_type` para
+   aceitar o novo valor (mantendo `quadra`/`quina` só para não invalidar linhas históricas).
+4. **[Em aberto] Sem sistema de vidas/pontos por rodada**: a pontuação aqui
+   (`cacheta_game_results.points_awarded`) alimenta um ranking cumulativo entre partidas, não o sistema
+   de 7 pontos/eliminação da regra oficial — cada partida tem só 1 vencedor (quem bate primeiro), sem os
+   demais perderem pontos de vida nem haver eliminação dentro da própria partida. **Não corrigido** —
+   mudar isso reescreveria o loop principal do jogo (uma partida deixaria de ter "1 vencedor leva o
+   pote", que é exatamente o que a lógica de mesas pagas/payout já em produção assume); adiado até
+   confirmação explícita, dado o impacto em dinheiro real.
 5. **Monte esgotado**: `cacheta_reshuffle_if_empty` (migration `20261029000041`) já implementa
    corretamente "recolhe o descarte exceto o topo, embaralha" — consistente com a regra oficial.
 6. **Validação de batida inválida**: como `validarBatida` roda no servidor antes de aceitar o "bater", uma

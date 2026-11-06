@@ -5,13 +5,13 @@ import type { Card } from "./cards";
 const NO_CORINGA: Card = { suit: "espadas", rank: 13 }; // não presente em nenhuma mão de teste abaixo
 
 describe("validarBatida", () => {
-  it("rejeita mão com tamanho diferente de 9", () => {
+  it("rejeita mão com tamanho diferente de 9 ou 10", () => {
     const result = validarBatida([{ suit: "copas", rank: 1 }], NO_CORINGA);
     expect(result.valid).toBe(false);
-    if (!result.valid) expect(result.reason).toMatch(/9 cartas/);
+    if (!result.valid) expect(result.reason).toMatch(/9 ou 10 cartas/);
   });
 
-  it("aceita batida normal: 3 trincas por valor", () => {
+  it("aceita batida normal (9 cartas): só existe 3+3+3, nunca 4+5", () => {
     const hand: Card[] = [
       { suit: "copas", rank: 1 },
       { suit: "ouros", rank: 1 },
@@ -27,12 +27,12 @@ describe("validarBatida", () => {
     expect(result.valid).toBe(true);
     if (result.valid) {
       expect(result.groups).toHaveLength(3);
-      expect(result.groups.every((g) => g.kind === "trinca")).toBe(true);
-      expect(combinationType(result.groups)).toBe("batida_normal");
+      expect(result.groups.every((g) => g.size === 3)).toBe(true);
+      expect(combinationType(hand.length)).toBe("batida_normal");
     }
   });
 
-  it("aceita quadra (sequência de 4) + quina (sequência de 5)", () => {
+  it("rejeita uma mão de 9 cartas que só forma 2 grupos (4+5) — não é regra oficial", () => {
     const hand: Card[] = [
       { suit: "copas", rank: 2 },
       { suit: "copas", rank: 3 },
@@ -45,29 +45,27 @@ describe("validarBatida", () => {
       { suit: "ouros", rank: 11 },
     ];
     const result = validarBatida(hand, NO_CORINGA);
-    expect(result.valid).toBe(true);
-    if (result.valid) {
-      expect(combinationType(result.groups)).toBe("quina");
-      expect(result.groups.map((g) => g.kind).sort()).toEqual(["quadra", "quina"]);
-    }
+    expect(result.valid).toBe(false);
   });
 
-  it("aceita quadra (trinca com uma dobra) + quina (trinca com duas dobras)", () => {
+  it("aceita bater com 10 cartas (bater limpo, sem descarte): 3 grupos somando 10, ex. 3+3+4", () => {
     const hand: Card[] = [
       { suit: "copas", rank: 6 },
       { suit: "ouros", rank: 6 },
       { suit: "paus", rank: 6 },
-      { suit: "espadas", rank: 6 }, // quadra: 4 cartas de valor 6
+      { suit: "espadas", rank: 6 }, // grupo de 4 cartas de valor 6
       { suit: "copas", rank: 10 },
       { suit: "ouros", rank: 10 },
       { suit: "paus", rank: 10 },
-      { suit: "espadas", rank: 10 },
-      { suit: "espadas", rank: 10 }, // quina: 5 cartas de valor 10 (2 baralhos permitem repetir naipe)
+      { suit: "copas", rank: 2 },
+      { suit: "ouros", rank: 2 },
+      { suit: "paus", rank: 2 },
     ];
     const result = validarBatida(hand, NO_CORINGA);
     expect(result.valid).toBe(true);
     if (result.valid) {
-      expect(combinationType(result.groups)).toBe("quina");
+      expect(result.groups).toHaveLength(3);
+      expect(combinationType(hand.length)).toBe("bater_limpo");
     }
   });
 

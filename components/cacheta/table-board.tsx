@@ -207,7 +207,7 @@ export function TableBoard({ tableId, myPlayerId }: { tableId: string; myPlayerI
   }
 
   async function handleBater() {
-    if (selectedCards.length !== 9) return;
+    if (selectedCards.length !== 9 && selectedCards.length !== 10) return;
     setBusy(true);
     setError(null);
     const formData = new FormData();
@@ -246,7 +246,7 @@ export function TableBoard({ tableId, myPlayerId }: { tableId: string; myPlayerI
   const discardTop = table.discard_pile[table.discard_pile.length - 1] ?? null;
   const canDraw = mySeat && isMyTurn && myHand.length === 9 && table.status === "playing";
   const canDiscard = mySeat && isMyTurn && myHand.length === 10 && selectedCards.length === 1;
-  const canBater = mySeat && isMyTurn && selectedCards.length === 9;
+  const canBater = mySeat && isMyTurn && (selectedCards.length === 9 || selectedCards.length === 10);
   const otherSeats = seats.filter((s) => s.id !== mySeat?.id);
   const pot = table.entry_amount * seats.filter((s) => s.player_id).length;
 
@@ -352,7 +352,7 @@ export function TableBoard({ tableId, myPlayerId }: { tableId: string; myPlayerI
           Descartar
         </Button>
         <Button size="sm" variant="yellow" disabled={!canBater || busy} onClick={handleBater}>
-          Bater
+          {selectedCards.length === 10 ? "Bater limpo (10)" : "Bater"}
         </Button>
       </div>
 

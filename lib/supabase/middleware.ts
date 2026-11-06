@@ -100,7 +100,16 @@ export async function updateSession(request: NextRequest) {
     if (!hasPlayer || (isIdentifiedOnlyRoute && isGuest)) {
       const url = request.nextUrl.clone();
       url.pathname = isJogarRoute ? "/jogar/entrar" : "/entrar";
-      url.search = `?next=${encodeURIComponent(request.nextUrl.pathname)}`;
+      // specs/002-moedas-pagamento-indicacao, US3 gap — um `?ref=CODIGO` na
+      // rota original (ex. alguém clicou um link de indicação direto para
+      // /jogar/online?ref=CODIGO) precisa sobreviver a este redirect para a
+      // tela de login, senão o vínculo de indicação se perde antes mesmo de
+      // chegar em link_or_create_player (que só lê `ref` da própria URL de
+      // /jogar/entrar ou /entrar).
+      const ref = request.nextUrl.searchParams.get("ref");
+      const params = new URLSearchParams({ next: request.nextUrl.pathname });
+      if (ref) params.set("ref", ref);
+      url.search = `?${params.toString()}`;
       return NextResponse.redirect(url);
     }
   }
